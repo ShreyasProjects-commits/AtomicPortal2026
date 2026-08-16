@@ -2,12 +2,44 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>courseinfo</title>
+    <title>FitPortal — Order Console</title>
+    <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <div id="root"></div>
+    <header class="topbar">
+      <h1>FitPortal</h1>
+      <span class="subtitle">Operational order console</span>
+    </header>
+
+    <main id="app">
+      <section class="panel">
+        <h2>New packing order</h2>
+        <p class="hint">Add items and containers, then submit to the optimiser.</p>
+
+        <form id="order-form">
+          <fieldset>
+            <legend>Items <small>(dimensions in cm, weight in kg)</small></legend>
+            <div id="items-list"></div>
+            <button type="button" data-add="items">+ Add item</button>
+          </fieldset>
+
+          <fieldset>
+            <legend>Containers <small>(dimensions in cm, max weight in kg)</small></legend>
+            <div id="containers-list"></div>
+            <button type="button" data-add="containers">+ Add container</button>
+          </fieldset>
+
+          <button type="submit" class="primary">Submit to optimiser</button>
+        </form>
+      </section>
+
+      <section class="panel" id="result-panel" hidden>
+        <h2>Result</h2>
+        <pre id="result"></pre>
+      </section>
+    </main>
+
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
