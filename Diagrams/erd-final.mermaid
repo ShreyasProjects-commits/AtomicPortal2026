@@ -1,0 +1,63 @@
+erDiagram
+    USERS ||--|| PROFILES : has
+    PROFILES ||--o{ ORDERS : creates
+    ORDERS ||--o{ ORDER_ITEMS : contains
+    ORDERS }o--o{ CONTAINERS : "uses (via ORDER_CONTAINERS)"
+    ORDERS ||--|| ORDER_RESULTS : produces
+    PROFILES ||--o{ CONTAINERS : saves
+
+    USERS {
+        uuid id PK "Supabase auth.users (managed)"
+    }
+
+    PROFILES {
+        uuid id PK, FK "-> auth.users.id"
+        text role "viewer | supervisor — only supervisors may run the optimiser"
+        text display_name
+        timestamptz created_at
+    }
+
+    CONTAINERS {
+        uuid id PK
+        text name
+        numeric length_cm
+        numeric width_cm
+        numeric height_cm
+        numeric box_weight_kg "the box's own weight"
+        numeric max_weight_kg "rated capacity, EXCLUDES box_weight_kg"
+        uuid created_by FK "who saved this box for reuse"
+        boolean is_active
+        timestamptz created_at
+    }
+
+    ORDERS {
+        uuid id PK
+        text status "draft / submitted / solved / failed"
+        uuid created_by FK
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    ORDER_ITEMS {
+        uuid id PK
+        uuid order_id FK
+        text item_name
+        numeric length_cm
+        numeric width_cm
+        numeric height_cm
+        numeric item_weight_kg
+        integer quantity
+    }
+
+    ORDER_CONTAINERS {
+        uuid order_id PK, FK
+        uuid container_id PK, FK
+    }
+
+    ORDER_RESULTS {
+        uuid order_id PK, FK
+        jsonb packed_containers
+        jsonb unpacked_items
+        integer computation_ms "tracked against the <60s requirement"
+        timestamptz created_at
+    }
