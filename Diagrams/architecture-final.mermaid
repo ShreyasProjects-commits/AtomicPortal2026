@@ -1,0 +1,29 @@
+flowchart LR
+    Viewer(["Any user<br/>(view only)"])
+    Supervisor(["Supervisor<br/>(can run optimiser)"])
+
+    subgraph Client["Client — desktop & mobile"]
+        FE["FitPortal frontend<br/>desktop: toolbar<br/>mobile: touch/gesture friendly"]
+    end
+
+    subgraph Supabase["Supabase"]
+        AUTH["Auth + profiles<br/>(role: viewer / supervisor)"]
+        EF["Edge Function<br/>POST /optimize<br/>checks role == supervisor"]
+        DB[("Postgres<br/>profiles · containers (saved boxes)<br/>orders · order_items<br/>order_containers · order_results")]
+    end
+
+    FS["FitSolver<br/>(sibling team — packing engine)<br/>SLA: respond well under 60s"]
+    FV["FitVisualizer<br/>(sibling team — result rendering)"]
+
+    Viewer --> FE
+    Supervisor --> FE
+    FE -- "read" --> DB
+    FE -- "save/reuse boxes" --> DB
+    FE -- "POST /optimize<br/>(supervisor only)" --> EF
+    EF -- "checks role via AUTH" --> AUTH
+    EF -- "reject if not supervisor" --> FE
+    EF -- "items + selected boxes" --> FS
+    FS -- "packedContainers +<br/>unpackedItems" --> EF
+    EF -- "persist result +<br/>flip orders.status" --> DB
+    EF -- "response" --> FE
+    FE -- "results (all users)" --> FV

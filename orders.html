@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FitPortal — Order Console</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>FitPortal</h1>
+      <span class="subtitle">Operational order console</span>
+      <nav class="topnav">
+        <a href="index.html">Home</a>
+        <a href="orders.html" class="active">Orders</a>
+        <a href="integrations.html">Integrations</a>
+        <a href="about.html">About</a>
+      </nav>
+    </header>
+
+    <main id="app">
+      <section class="panel">
+        <h2>New packing order</h2>
+        <p class="hint">Add items and containers, then submit to the optimiser.</p>
+
+        <form id="order-form">
+          <div class="fields-grid">
+            <fieldset>
+          <legend>Items <small>(dimensions in cm, weight in kg)</small></legend>
+          <div id="items-list"></div>
+          <button type="button" data-add="items">+ Add item</button>
+        </fieldset>
+
+        <fieldset>
+          <legend>Containers <small>(dimensions in cm, max weight in kg)</small></legend>
+          <div id="containers-list"></div>
+          <button type="button" data-add="containers">+ Add container</button>
+        </fieldset>
+      </div>
+
+      <button type="submit" class="primary">Submit to optimiser</button>
+    </form>
+      </section>
+
+      <section class="panel" id="result-panel" hidden>
+        <h2>Result</h2>
+        <pre id="result"></pre>
+      </section>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+
+    <footer>
+      <div class="fgrid">
+        <div>
+          <div class="fbrand">FitPortal</div>
+          <p>The access layer for Project Perfect Fit.</p>
+        </div>
+        <div>
+          <h3>Portal</h3>
+          <a href="orders.html" class="active">Orders</a>
+          <a href="integrations.html">Integrations</a>
+          <a href="about.html">About</a>
+        </div>
+        <div>
+          <h3>Sub-systems</h3>
+          <a href="integrations.html">FitSolver</a>
+          <a href="integrations.html">FitVisualizer</a>
+        </div>
+      </div>
+      <div class="footer-bottom">COMP4050 · Atomic Fit division · Client: Thomax</div>
+    </footer>
+  </body>
+</html>

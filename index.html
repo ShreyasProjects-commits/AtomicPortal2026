@@ -2,12 +2,90 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>courseinfo</title>
+    <title>FitPortal</title>
+    <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.js"></script>
+    <header class="topbar">
+      <h1>FitPortal</h1>
+      <span class="subtitle">Project Perfect Fit · Atomic Fit division</span>
+      <nav class="topnav">
+        <a href="index.html" class="active">Home</a>
+        <a href="orders.html">Orders</a>
+        <a href="integrations.html">Integrations</a>
+        <a href="about.html">About</a>
+      </nav>
+    </header>
+
+    <main id="app">
+      <section class="panel hero-panel">
+        <h1>FitPortal</h1>
+        <p class="hint">
+          The access layer for Project Perfect Fit — connecting operational staff
+          and integration partners to the carton-packing optimisation engine.
+        </p>
+        <div class="cta-row">
+          <a class="btn primary-btn" href="orders.html">Start an order</a>
+          <a class="btn" href="integrations.html">Integration &amp; API access</a>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Users</h2>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <h3>Viewers</h3>
+            <p>All users can view submitted orders and their packing results.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Supervisors</h3>
+            <p>Only supervisors can run the optimisation engine against a new order.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Sub-divisions of the team</h2>
+        <div class="subsystem-list">
+          <div class="subsystem-card">
+            <span class="tag">01 · engine</span>
+            <h3>FitSolver</h3>
+            <p>Three-dimensional bin packing for a given set of items and container sizes.</p>
+          </div>
+          <div class="subsystem-card active">
+            <span class="tag">02 · access</span>
+            <h3>FitPortal <em>(this site)</em></h3>
+            <p>Order intake, a central portal, and back-end integration access.</p>
+          </div>
+          <div class="subsystem-card">
+            <span class="tag">03 · view</span>
+            <h3>FitVisualizer</h3>
+            <p>A mobile-friendly, interactive view of packing results.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="fgrid">
+        <div>
+          <div class="fbrand">FitPortal</div>
+          <p>The access layer for Project Perfect Fit.</p>
+        </div>
+        <div>
+          <h3>Portal</h3>
+          <a href="orders.html">Orders</a>
+          <a href="integrations.html">Integrations</a>
+          <a href="about.html">About</a>
+        </div>
+        <div>
+          <h3>Sub-systems</h3>
+          <a href="integrations.html">FitSolver</a>
+          <a href="integrations.html">FitVisualizer</a>
+        </div>
+      </div>
+      <div class="footer-bottom">COMP4050 · Atomic Fit division · Client: Thomax</div>
+    </footer>
   </body>
 </html>
