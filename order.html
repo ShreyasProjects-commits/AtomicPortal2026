@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FitPortal — Order detail</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>FitPortal</h1>
+      <span class="subtitle">Order detail</span>
+      <nav class="topnav">
+        <a href="index.html">Home</a>
+        <a href="orders.html" class="active">Orders</a>
+        <a href="integrations.html">Integrations</a>
+        <a href="about.html">About</a>
+      </nav>
+    </header>
+
+    <main id="app">
+      <p id="order-loading" class="hint">Loading order…</p>
+      <p id="order-error" class="banner error" hidden></p>
+
+      <div id="order-content" hidden>
+        <section class="panel">
+          <div class="detail-header">
+            <div>
+              <h2 id="order-ref">—</h2>
+              <p class="hint">Created <span id="order-created">—</span></p>
+            </div>
+            <span id="order-status" class="status-pill">—</span>
+          </div>
+
+        <div class="cta-row">
+            <a id="view-3d" class="btn primary-btn" href="#" hidden>
+              View in 3D
+            </a>
+            <button type="button" id="reoptimize" class="btn" hidden>
+              Re-run optimiser
+            </button>
+            <a class="btn" href="orders.html">← Back to queue</a>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Items</h2>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Dimensions (cm)</th>
+                  <th>Weight (kg)</th>
+                  <th>Qty</th>
+                </tr>
+              </thead>
+              <tbody id="items-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Containers</h2>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Dimensions (cm)</th>
+                  <th>Max weight (kg)</th>
+                </tr>
+              </thead>
+              <tbody id="containers-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel" id="result-panel" hidden>
+          <h2>Packing result</h2>
+          <p id="unpacked-note" class="banner warn" hidden></p>
+          <pre id="result-json"></pre>
+        </section>
+      </div>
+    </main>
+
+    <script type="module" src="/src/order-detail.js"></script>
+
+    <footer>
+      <div class="fgrid">
+        <div>
+          <div class="fbrand">FitPortal</div>
+          <p>The access layer for Project Perfect Fit.</p>
+        </div>
+        <div>
+          <h3>Portal</h3>
+          <a href="orders.html" class="active">Orders</a>
+          <a href="integrations.html">Integrations</a>
+          <a href="about.html">About</a>
+        </div>
+        <div>
+          <h3>Sub-systems</h3>
+          <a href="integrations.html">FitSolver</a>
+          <a href="integrations.html">FitVisualizer</a>
+        </div>
+      </div>
+      <div class="footer-bottom">COMP4050 · Atomic Fit division · Client: Thomax</div>
+    </footer>
+  </body>
+</html>

@@ -7,9 +7,13 @@
 ## Flow
 
 ```
-FitPortal  ──POST /optimize──►  FitSolver
-FitPortal  ◄──── response ────  FitSolver   (packedContainers + unpackedItems)
-FitPortal  ──── result ──────►  FitVisualizer   (render)
+Thomax business page  →  POST /import-csv  →  FitPortal Edge Function
+FitPortal Edge Function  →  POST /optimize  →  FitSolver
+FitPortal Edge Function  ←  packedContainers + unpackedItems  ←  FitSolver
+FitPortal  →  persists to order_results
+
+Warehouse worker  →  FitPortal order list  →  View in 3D
+FitVisualizer  →  GET /order-result?id=  →  render (or reads Supabase directly)
 ```
 
 ## Request — `POST /optimize`

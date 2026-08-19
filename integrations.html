@@ -20,8 +20,64 @@
 
     <main id="app">
       <section class="panel">
-        <h2>Integrations &amp; API</h2>
-        <p class="hint">Placeholder — endpoints, engine status, and access details go here once FitSolver/FitVisualizer are wired up.</p>
+        <h2>Live Edge Functions</h2>
+        <p class="hint">
+          Base URL: <code>{SUPABASE_URL}/functions/v1</code> · Local default:
+          <code>http://localhost:54321/functions/v1</code>
+        </p>
+
+        <div class="endpoint-list">
+          <div class="endpoint-card">
+            <span class="tag-impl">Implemented</span>
+            <h3>GET /orders</h3>
+            <p>List imported orders. Detail: <code>GET /orders?id=&lt;uuid&gt;</code></p>
+          </div>
+          <div class="endpoint-card">
+            <span class="tag-impl">Implemented</span>
+            <h3>GET /order-result?id=&lt;uuid&gt;</h3>
+            <p>Packing result in <code>api-contract.md</code> shape — for FitVisualizer.</p>
+          </div>
+          <div class="endpoint-card">
+            <span class="tag-impl">Implemented</span>
+            <h3>POST /import-csv</h3>
+            <p>Upload business orders (CSV). See <code>docs/import-contract.md</code>.</p>
+          </div>
+          <div class="endpoint-card">
+            <span class="tag-impl">Implemented</span>
+            <h3>POST /optimize</h3>
+            <p>Proxy to FitSolver. Re-run with <code>{ "orderId": "&lt;uuid&gt;" }</code> only.</p>
+          </div>
+          <div class="endpoint-card">
+            <span class="tag-planned">Planned</span>
+            <h3>POST /auth/login</h3>
+            <p>Supabase Auth — see <code>docs/auth-and-rls-plan.md</code>.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Sibling teams</h2>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <h3>FitSolver</h3>
+            <p>
+              FitPortal calls <code>FITSOLVER_URL</code> from the Edge Function.
+              Falls back to a mock solver when unset (local dev).
+            </p>
+          </div>
+          <div class="feature-card">
+            <h3>FitVisualizer</h3>
+            <p>
+              Open <code>{FITVISUALIZER_URL}?orderId=&lt;uuid&gt;</code> or fetch
+              <code>GET /order-result?id=&lt;uuid&gt;</code>. Embedded via
+              <code>visualize.html</code>.
+            </p>
+          </div>
+        </div>
+        <p class="hint">
+          Full process architecture for sibling divisions:
+          <code>docs/end-to-end-architecture.md</code>
+        </p>
       </section>
     </main>
 

@@ -5,17 +5,16 @@ proposes an approach and lists the RLS policies needed once it's confirmed.
 
 ## 1. What's already in place
 
-From `supabase/schema.sql` and the ERD:
+From `supabase/schema.sql`:
 
 - Every table has RLS turned on: `items`, `containers`, `orders`, `order_items`,
-  `order_results` (and `profiles` per the ERD).
-- No policies exist yet. Until they're written, the default-deny behaviour of
-  RLS means the anon/authenticated client can't read or write any row, even
-  its own.
-- `profiles.id` is a foreign key to Supabase's managed `auth.users.id` —
-  standard Supabase pattern of one profile row per auth user.
-- `profiles.role` is either `viewer` or `supervisor`. Per `architecture-final.mermaid`,
-  only supervisors are allowed to call `POST /optimize`.
+  `order_containers`, `order_results`.
+- **Edge Functions use the service role key** and bypass RLS for import, optimise,
+  and read APIs (`orders`, `order-result`). The browser calls Edge Functions, not
+  Postgres directly.
+- No RLS policies exist yet for client-side Supabase access. Until auth + policies
+  are added, **do not expose the anon key for direct table reads in production**.
+- `profiles` table is in the ERD but not yet in `schema.sql` — add with auth work.
 
 ## 2. Open decision: login method
 

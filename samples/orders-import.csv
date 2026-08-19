@@ -1,0 +1,6 @@
+record_type,order_ref,item_name,length_cm,width_cm,height_cm,weight_kg,quantity,container_name,max_weight_kg
+item,ORD-1042,Widget box,20,15,10,2.5,4,, 
+item,ORD-1042,Gadget sleeve,10,8,5,0.5,2,, 
+container,ORD-1042,,60,40,40,,,Standard carton,30
+item,ORD-1043,Hard drive,14,10,3,0.8,6,, 
+container,ORD-1043,,50,40,30,,,Medium carton,25

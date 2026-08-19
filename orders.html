@@ -3,13 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FitPortal — Order Console</title>
+    <title>FitPortal — Orders</title>
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
     <header class="topbar">
       <h1>FitPortal</h1>
-      <span class="subtitle">Operational order console</span>
+      <span class="subtitle">Warehouse order queue</span>
       <nav class="topnav">
         <a href="index.html">Home</a>
         <a href="orders.html" class="active">Orders</a>
@@ -20,35 +20,56 @@
 
     <main id="app">
       <section class="panel">
-        <h2>New packing order</h2>
-        <p class="hint">Add items and containers, then submit to the optimiser.</p>
+        <h2>Order queue</h2>
+        <p class="hint">
+          Select an imported order to view details and open the 3D packing plan in FitVisualizer.
+        </p>
 
-        <form id="order-form">
-          <div class="fields-grid">
-            <fieldset>
-          <legend>Items <small>(dimensions in cm, weight in kg)</small></legend>
-          <div id="items-list"></div>
-          <button type="button" data-add="items">+ Add item</button>
-        </fieldset>
+        <div id="orders-error" class="banner error" hidden></div>
 
-        <fieldset>
-          <legend>Containers <small>(dimensions in cm, max weight in kg)</small></legend>
-          <div id="containers-list"></div>
-          <button type="button" data-add="containers">+ Add container</button>
-        </fieldset>
-      </div>
+        <label class="search-label" for="order-search">Search</label>
+        <input type="search" id="order-search" placeholder="Filter by ref, id, or status…" />
 
-      <button type="submit" class="primary">Submit to optimiser</button>
-    </form>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Order ref</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Updated</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="orders-body"></tbody>
+          </table>
+        </div>
+        <p id="orders-empty" class="empty-state" hidden>
+          No orders yet. Import a sample CSV below to populate the queue.
+        </p>
       </section>
 
-      <section class="panel" id="result-panel" hidden>
-        <h2>Result</h2>
-        <pre id="result"></pre>
+      <section class="panel">
+        <h2>Import orders (CSV)</h2>
+        <p class="hint">
+          Interim testing tool — simulates orders arriving from the Thomax business page.
+          Format documented in <code>docs/import-contract.md</code> ·
+          <a href="samples/orders-import.csv" download>sample CSV</a>
+        </p>
+
+        <form id="import-form" class="import-form">
+          <input type="file" id="csv-file" accept=".csv,text/csv" required />
+          <label class="checkbox-label">
+            <input type="checkbox" id="replace-existing" />
+            Replace existing orders with the same reference
+          </label>
+          <button type="submit" class="primary">Upload &amp; optimise</button>
+        </form>
+        <p id="import-status" class="import-status"></p>
       </section>
     </main>
 
-    <script type="module" src="/src/main.js"></script>
+    <script type="module" src="/src/orders.js"></script>
 
     <footer>
       <div class="fgrid">

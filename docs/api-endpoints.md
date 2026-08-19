@@ -1,12 +1,144 @@
 # FitPortal — API Endpoints
 
-> All endpoints are served via Supabase Edge Functions or Supabase Auth.
-> Supervisor-only endpoints require the user's role to be `supervisor` in the `profiles` table.
+> Supabase Edge Functions base: `{SUPABASE_URL}/functions/v1`
+> Auth endpoints are **planned** — see `docs/auth-and-rls-plan.md`.
 > All dimensions in **cm**, all weights in **kg**.
 
 ---
 
-## Auth
+## Implementation status (Sprint 2)
+
+| Endpoint | Status | Notes |
+|---|---|---|
+| `GET /orders` | ✅ | List all orders |
+| `GET /orders?id=` | ✅ | Order detail + items + containers + result |
+| `GET /order-result?id=` | ✅ | api-contract shape for FitVisualizer |
+| `POST /import-csv` | ✅ | CSV upload — see `docs/import-contract.md` |
+| `POST /optimize` | ✅ | FitSolver proxy; `{ orderId }` only to re-run |
+| `POST /auth/login` | ⏳ | Planned |
+| `POST /orders` (create from UI) | ❌ | Out of scope — orders imported |
+| Items/containers CRUD | ⏳ | Planned for catalogue management |
+
+---
+
+## Orders (implemented)
+
+### List all orders
+`GET /orders`
+
+Response:
+```json
+[
+  {
+    "id": "uuid",
+    "external_ref": "ORD-1042",
+    "status": "solved",
+    "created_at": "2026-08-19T00:00:00Z",
+    "updated_at": "2026-08-19T00:05:00Z"
+  }
+]
+```
+
+### Get a specific order
+`GET /orders?id={uuid}`
+
+Response:
+```json
+{
+  "id": "uuid",
+  "external_ref": "ORD-1042",
+  "status": "solved",
+  "created_at": "2026-08-19T00:00:00Z",
+  "updated_at": "2026-08-19T00:05:00Z",
+  "items": [
+    {
+      "id": "uuid",
+      "name": "Widget box",
+      "length_cm": 20,
+      "width_cm": 15,
+      "height_cm": 10,
+      "weight_kg": 2.5,
+      "quantity": 4
+    }
+  ],
+  "containers": [
+    {
+      "id": "uuid",
+      "name": "Standard carton",
+      "length_cm": 60,
+      "width_cm": 40,
+      "height_cm": 40,
+      "max_weight_kg": 30
+    }
+  ],
+  "result": {
+    "packed_containers": [],
+    "unpacked_items": [],
+    "created_at": "2026-08-19T00:05:00Z"
+  }
+}
+```
+
+---
+
+## Import (implemented)
+
+### Import orders from CSV
+`POST /import-csv`
+
+- Body: raw CSV (`text/csv`) or `multipart/form-data` field `file`
+- Query: `?replace=true` to overwrite existing `external_ref`
+- See `docs/import-contract.md`
+
+Response:
+```json
+{
+  "imported": [
+    { "id": "uuid", "external_ref": "ORD-1042", "status": "solved" }
+  ]
+}
+```
+
+---
+
+## Results (implemented)
+
+### Get packing result (FitVisualizer)
+`GET /order-result?id={uuid}`
+
+Returns `docs/api-contract.md` response shape:
+
+```json
+{
+  "orderId": "uuid",
+  "external_ref": "ORD-1042",
+  "status": "solved",
+  "packedContainers": [],
+  "unpackedItems": [],
+  "created_at": "2026-08-19T00:05:00Z"
+}
+```
+
+---
+
+## Optimiser (implemented)
+
+### Run / re-run the optimiser
+`POST /optimize`
+
+Full payload (api-contract shape) **or** re-run existing order:
+
+```json
+{ "orderId": "uuid" }
+```
+
+Persists to `order_results` and sets `orders.status` to `solved` or `failed`.
+
+Response: same as `docs/api-contract.md`.
+
+---
+
+## Auth (planned)
 
 ### Login
 `POST /auth/login`
@@ -27,275 +159,22 @@ Response:
 }
 ```
 
----
-
 ### Logout
-`POST /auth/logout`
-
-Response: `No Content`
-
----
-
-## Profile
+`POST /auth/logout` — `204 No Content`
 
 ### Get current user's profile
 `GET /profile`
 
-Response:
-```json
-{
-  "id": "uuid",
-  "role": "supervisor",
-  "display_name": "Shreyas",
-  "created_at": "2026-08-19T00:00:00Z"
-}
-```
-
 ---
 
-## Orders
+## Catalogue (planned)
 
-### Create a new order
-`POST /orders` — *Supervisor only*
-
-Request:
-```json
-{
-  "items": [
-    {
-      "name": "Widget box",
-      "length_cm": 20,
-      "width_cm": 15,
-      "height_cm": 10,
-      "weight_kg": 2.5,
-      "quantity": 4
-    }
-  ],
-  "container_ids": ["uuid-1", "uuid-2"]
-}
-```
-
-Response:
-```json
-{
-  "id": "uuid",
-  "status": "draft",
-  "created_by": "uuid",
-  "created_at": "2026-08-19T00:00:00Z"
-}
-```
-
----
-
-### List all orders
-`GET /orders`
-
-Response:
-```json
-[
-  {
-    "id": "uuid",
-    "status": "solved",
-    "created_by": "uuid",
-    "created_at": "2026-08-19T00:00:00Z"
-  }
-]
-```
-
----
-
-### Get a specific order
-`GET /orders/:id`
-
-Response:
-```json
-{
-  "id": "uuid",
-  "status": "solved",
-  "items": [...],
-  "containers": [...],
-  "created_at": "2026-08-19T00:00:00Z"
-}
-```
-
----
-
-### Delete a draft order
-`DELETE /orders/:id` — *Supervisor only*
-
-Response: `204 No Content`
-
----
-
-## Optimiser
-
-### Run the optimiser on an order
-`POST /orders/:id/optimize` — *Supervisor only*
-
-Sends the order to FitSolver and stores the result. Order status changes from `submitted` to `solved` or `failed`.
-
-Response:
-```json
-{
-  "orderId": "uuid",
-  "packedContainers": [
-    {
-      "containerId": "uuid",
-      "placements": [
-        {
-          "itemId": "uuid",
-          "position": { "x": 0, "y": 0, "z": 0, "unit": "cm" },
-          "rotation": { "x": 0, "y": 0, "z": 0 }
-        }
-      ],
-      "utilisation": 0.82
-    }
-  ],
-  "unpackedItems": [
-    { "itemId": "uuid", "reason": "no_container_fits" }
-  ]
-}
-```
-
----
-
-## Results
-
-### Get packing result for an order
-`GET /orders/:id/result`
-
-Response:
-```json
-{
-  "order_id": "uuid",
-  "packed_containers": [...],
-  "unpacked_items": [...],
-  "computation_ms": 1240,
-  "created_at": "2026-08-19T00:00:00Z"
-}
-```
-
----
-
-## Items
-
-### Add an item
-`POST /items`
-
-Request:
-```json
-{
-  "name": "Widget box",
-  "length_cm": 20,
-  "width_cm": 15,
-  "height_cm": 10,
-  "weight_kg": 2.5
-}
-```
-
-Response:
-```json
-{
-  "id": "uuid",
-  "name": "Widget box",
-  "length_cm": 20,
-  "width_cm": 15,
-  "height_cm": 10,
-  "weight_kg": 2.5,
-  "created_at": "2026-08-19T00:00:00Z"
-}
-```
-
----
-
-### List all items
-`GET /items`
-
-Response:
-```json
-[
-  {
-    "id": "uuid",
-    "name": "Widget box",
-    "length_cm": 20,
-    "width_cm": 15,
-    "height_cm": 10,
-    "weight_kg": 2.5,
-    "created_at": "2026-08-19T00:00:00Z"
-  }
-]
-```
-
----
-
-### Delete an item
-`DELETE /items/:id`
-
-Response: `204 No Content`
-
----
-
-## Containers
-
-### Save a new container
-`POST /containers`
-
-Request:
-```json
-{
-  "name": "Standard carton",
-  "length_cm": 60,
-  "width_cm": 40,
-  "height_cm": 40,
-  "max_weight_kg": 30
-}
-```
-
-Response:
-```json
-{
-  "id": "uuid",
-  "name": "Standard carton",
-  "length_cm": 60,
-  "width_cm": 40,
-  "height_cm": 40,
-  "max_weight_kg": 30,
-  "created_at": "2026-08-19T00:00:00Z"
-}
-```
-
----
-
-### List all containers
-`GET /containers`
-
-Response:
-```json
-[
-  {
-    "id": "uuid",
-    "name": "Standard carton",
-    "length_cm": 60,
-    "width_cm": 40,
-    "height_cm": 40,
-    "max_weight_kg": 30,
-    "created_at": "2026-08-19T00:00:00Z"
-  }
-]
-```
-
----
-
-### Delete a container
-`DELETE /containers/:id`
-
-Response: `204 No Content`
+Items and containers CRUD endpoints remain as originally specified for back-office
+catalogue management. Not used by the warehouse order queue UI.
 
 ---
 
 ## Error Responses
-
-All endpoints return errors in this format:
 
 ```json
 {
@@ -304,10 +183,8 @@ All endpoints return errors in this format:
 }
 ```
 
-Common error codes:
-- `unauthorized` — not logged in
-- `forbidden` — logged in but not a supervisor
-- `not_found` — resource doesn't exist
-- `invalid_request` — missing or invalid fields
-- `solver_unreachable` — FitSolver could not be contacted
-- `solver_error` — FitSolver returned an error
+Common codes:
+- `not_found` — order or result missing
+- `invalid_csv` / `duplicate_order` — import errors
+- `solver_unreachable` / `solver_error` — FitSolver failures
+- `unauthorized` / `forbidden` — when auth is added

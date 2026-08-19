@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FitPortal — 3D view</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>FitPortal</h1>
+      <span class="subtitle">3D packing view</span>
+      <nav class="topnav">
+        <a href="index.html">Home</a>
+        <a href="orders.html" class="active">Orders</a>
+        <a href="integrations.html">Integrations</a>
+        <a href="about.html">About</a>
+      </nav>
+    </header>
+
+    <main id="app">
+      <section class="panel">
+        <div class="detail-header">
+          <div>
+            <h2 id="viz-title">Loading…</h2>
+            <p class="hint">FitVisualizer renders inside this page. Configure <code>FITVISUALIZER_URL</code> in <code>src/config.js</code>.</p>
+          </div>
+          <a id="back-link" class="btn" href="orders.html">← Back to queue</a>
+        </div>
+        <iframe
+          id="viewer"
+          title="FitVisualizer 3D packing view"
+          class="viz-frame"
+          hidden
+        ></iframe>
+        <p id="viz-error" class="banner error" hidden></p>
+      </section>
+    </main>
+
+    <script type="module">
+      import { viewerUrl } from "./config.js";
+
+      const orderId = new URLSearchParams(location.search).get("id");
+      const iframe = document.getElementById("viewer");
+      const errEl = document.getElementById("viz-error");
+      const title = document.getElementById("viz-title");
+      const back = document.getElementById("back-link");
+
+      if (!orderId) {
+        title.textContent = "Missing order";
+        errEl.hidden = false;
+        errEl.textContent = "No order id in URL. Open from the order queue.";
+      } else {
+        title.textContent = `Order ${orderId.slice(0, 8)}…`;
+        back.href = `order.html?id=${encodeURIComponent(orderId)}`;
+        iframe.src = viewerUrl(orderId);
+        iframe.hidden = false;
+      }
+    </script>
+
+    <footer>
+      <div class="fgrid">
+        <div>
+          <div class="fbrand">FitPortal</div>
+          <p>The access layer for Project Perfect Fit.</p>
+        </div>
+        <div>
+          <h3>Portal</h3>
+          <a href="orders.html" class="active">Orders</a>
+          <a href="integrations.html">Integrations</a>
+          <a href="about.html">About</a>
+        </div>
+        <div>
+          <h3>Sub-systems</h3>
+          <a href="integrations.html">FitSolver</a>
+          <a href="integrations.html">FitVisualizer</a>
+        </div>
+      </div>
+      <div class="footer-bottom">COMP4050 · Atomic Fit division · Client: Thomax</div>
+    </footer>
+  </body>
+</html>
