@@ -52,7 +52,7 @@
         errEl.textContent = "No order id in URL. Open from the order queue.";
       } else {
         title.textContent = `Order ${orderId.slice(0, 8)}…`;
-        back.href = `order.html?id=${encodeURIComponent(orderId)}`;
+        back.href = `order?id=${encodeURIComponent(orderId)}`;
         iframe.src = viewerUrl(orderId);
         iframe.hidden = false;
       }

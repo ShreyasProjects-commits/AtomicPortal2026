@@ -88,12 +88,12 @@ function renderOrders(orders) {
     .map(
       (o) => `
     <tr>
-      <td><a class="order-link" href="order.html?id=${o.id}">${escapeHtml(o.external_ref ?? o.id.slice(0, 8))}</a></td>
+      <td><a class="order-link" href="order?id=${encodeURIComponent(o.id)}">${escapeHtml(o.external_ref ?? o.id.slice(0, 8))}</a></td>
       <td><span class="status-pill status-${o.status}">${statusLabel(o.status)}</span></td>
       <td>${formatDate(o.created_at)}</td>
       <td>${formatDate(o.updated_at)}</td>
       <td class="actions-cell">
-        <a class="btn btn-sm" href="order.html?id=${o.id}">Details</a>
+        <a class="btn btn-sm" href="order?id=${encodeURIComponent(o.id)}">Details</a>
         ${
           o.status === "solved"
             ? `<a class="btn btn-sm primary-btn" href="${visualizePageUrl(o.id)}">View in 3D</a>`
