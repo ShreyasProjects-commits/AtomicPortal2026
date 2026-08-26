@@ -23,13 +23,13 @@ Exception: `GET /order-result` returns the **integration contract** shape (neste
 
 | Endpoint | Status | Notes |
 |---|---|---|
-| `GET /orders` | ✅ | List all orders |
-| `GET /orders?id=` | ✅ | Order detail + items + containers + result |
-| `GET /order-result?id=` | ✅ | api-contract shape for FitVisualizer |
-| `POST /import-csv` | ✅ | CSV upload — see `docs/import-contract.md` |
-| `POST /optimize` | ✅ | FitSolver proxy; `{ orderId }` only to re-run |
-| `POST /auth/login` | ⏳ | Planned |
-| `POST /orders` (create from UI) | ❌ | Out of scope — orders imported |
+| `GET /orders` | List all orders |
+| `GET /orders?id=` | Order detail + items + containers + result |
+| `GET /order-result?id=` | api-contract shape for FitVisualizer |
+| `POST /import-csv` | CSV upload — see `docs/import-contract.md` |
+| `POST /optimize` | FitSolver proxy; `{ orderId }` only to re-run |
+| `POST /auth/login` | Planned |
+| `POST /orders` (create from UI) | Out of scope — orders imported |
 | Items/containers CRUD | ⏳ | Planned for catalogue management |
 
 ---
