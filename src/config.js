@@ -15,7 +15,7 @@ export function viewerUrl(orderId) {
 
 /** In-portal iframe wrapper — keeps FitPortal nav chrome. */
 export function visualizePageUrl(orderId) {
-  return `visualize?id=${encodeURIComponent(orderId)}`;
+  return `visualize.html?id=${encodeURIComponent(orderId)}`;
 }
 
 export function orderResultApiUrl(orderId) {
