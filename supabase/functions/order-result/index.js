@@ -4,7 +4,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { handleCors, json, errorResponse } from "../_shared/cors.js";
 import { getServiceClient, UUID_RE } from "../_shared/supabase.js";
-import { toApiContractResult } from "../_shared/orders.js";
+import { loadOrderCatalog, toApiContractResult } from "../_shared/orders.js";
 
 serve(async (req) => {
   const cors = handleCors(req);
@@ -52,8 +52,17 @@ serve(async (req) => {
     return errorResponse("not_found", "No packing result for this order yet", 404);
   }
 
+  let catalog;
+  try {
+    catalog = await loadOrderCatalog(supabase, id);
+  } catch (err) {
+    return errorResponse("database_error", err.message, 500);
+  }
+
   return json({
     ...toApiContractResult(id, result),
+    items: catalog.items,
+    containers: catalog.containers,
     external_ref: order.external_ref,
     status: order.status,
     created_at: result.created_at,

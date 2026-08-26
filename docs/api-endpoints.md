@@ -4,6 +4,19 @@
 > Auth endpoints are **planned** — see `docs/auth-and-rls-plan.md`.
 > All dimensions in **cm**, all weights in **kg**.
 
+## Two API layers (not a mismatch)
+
+| Layer | Doc | Shape | Used by |
+|---|---|---|---|
+| **Integration contract** | `docs/api-contract.md` | Nested JSON (`dimensions`, `weight`, `maxWeight`) | FitSolver, FitVisualizer |
+| **FitPortal warehouse API** | This file | Flat DB fields (`length_cm`, `weight_kg`) on `GET /orders?id=` | FitPortal HTML UI only |
+
+FitPortal Edge Functions **translate** between DB storage and the integration contract.
+Siblings should build against **`api-contract.md`**, not the flat fields on `GET /orders?id=`.
+
+Exception: `GET /order-result` returns the **integration contract** shape (nested), plus
+`items[]` and `containers[]` for FitVisualizer rendering.
+
 ---
 
 ## Implementation status (Sprint 2)
@@ -106,13 +119,31 @@ Response:
 ### Get packing result (FitVisualizer)
 `GET /order-result?id={uuid}`
 
-Returns `docs/api-contract.md` response shape:
+Returns **`docs/api-contract.md`** shape — placements plus item/container catalogue
+so FitVisualizer can render without a second API call:
 
 ```json
 {
   "orderId": "uuid",
   "external_ref": "ORD-1042",
   "status": "solved",
+  "items": [
+    {
+      "id": "uuid",
+      "name": "Widget box",
+      "dimensions": { "length": 20, "width": 15, "height": 10, "unit": "cm" },
+      "weight": { "value": 2.5, "unit": "kg" },
+      "quantity": 4
+    }
+  ],
+  "containers": [
+    {
+      "id": "uuid",
+      "name": "Standard carton",
+      "dimensions": { "length": 60, "width": 40, "height": 40, "unit": "cm" },
+      "maxWeight": { "value": 30, "unit": "kg" }
+    }
+  ],
   "packedContainers": [],
   "unpackedItems": [],
   "created_at": "2026-08-19T00:05:00Z"
@@ -125,6 +156,9 @@ Returns `docs/api-contract.md` response shape:
 
 ### Run / re-run the optimiser
 `POST /optimize`
+
+**FitPortal Edge Function** at `{SUPABASE_URL}/functions/v1/optimize`.
+Forwards the api-contract payload to **FitSolver's URL** (`FITSOLVER_URL` secret).
 
 Full payload (api-contract shape) **or** re-run existing order:
 
