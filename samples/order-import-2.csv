@@ -1,0 +1,30 @@
+record_type,order_ref,item_name,length_cm,width_cm,height_cm,weight_kg,quantity,container_name,max_weight_kg
+item,ORD-1044,Bluetooth speaker,18,12,8,0.9,2,,
+container,ORD-1044,,45,35,30,,,Small carton,15
+item,ORD-1045,Monitor stand,40,25,5,3.2,1,,
+item,ORD-1045,USB-C hub,12,8,3,0.3,3,,
+container,ORD-1045,,55,45,35,,,Standard carton,30
+item,ORD-1046,Keyboard,45,15,4,0.7,1,,
+item,ORD-1046,Mouse,12,7,4,0.15,2,,
+item,ORD-1046,Mouse pad,35,25,0.5,0.2,1,,
+container,ORD-1046,,60,40,25,,,Flat pack carton,20
+item,ORD-1047,Power supply unit,15,14,8,1.8,4,,
+container,ORD-1047,,50,40,35,,,Medium carton,25
+item,ORD-1048,Laptop sleeve,38,28,3,0.4,5,,
+item,ORD-1048,Webcam,8,8,6,0.25,2,,
+container,ORD-1048,,55,40,30,,,Standard carton,25
+item,ORD-1049,Network switch,30,20,5,1.5,1,,
+item,ORD-1049,Ethernet cable 5m,15,15,3,0.4,6,,
+container,ORD-1049,,65,45,40,,,Large carton,35
+item,ORD-1050,Tablet,25,17,1,0.5,3,,
+container,ORD-1050,,40,30,15,,,Slim carton,12
+item,ORD-1051,Desk lamp,35,15,15,2.1,1,,
+item,ORD-1051,Bulb pack,10,10,12,0.3,2,,
+container,ORD-1051,,50,35,40,,,Tall carton,20
+item,ORD-1052,External SSD,11,8,2,0.2,8,,
+item,ORD-1052,SSD enclosure,14,10,3,0.35,4,,
+container,ORD-1052,,45,35,25,,,Small carton,18
+item,ORD-1053,27in monitor,65,40,12,5.5,1,,
+item,ORD-1053,Monitor arm,50,15,8,3.0,1,,
+item,ORD-1053,VESA bracket,25,25,3,0.8,1,,
+container,ORD-1053,,80,50,45,,,XL carton,40
