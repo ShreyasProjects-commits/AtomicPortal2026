@@ -19,20 +19,23 @@
     </header>
 
     <main>
-      <div class="panel hero-panel">
+      <div class="panel login-panel">
         <h1>Login</h1>
         <form id="login-form">
           <div>
             <label for="email">Email:</label><br>
-            <input type="email" id="email" placeholder="abc@domain.com" required> </input> <br>
+            <input type="email" id="email" placeholder="abc@domain.com" required> <br>
           </div>
           <div>
             <label for="password">Password:</label><br>
-            <input type="password" id="password" required> </input> <br>
+            <input type="password" id="password" placeholder="********" required> <br>
           </div>
+
+          <button type="submit" class="btn primary-btn login-btn">Login</button>
         </form>
-      </section>
     </main>
+
+    <script type="module" src="/src/auth.js"></script>
 
     <footer>
       <div class="fgrid">

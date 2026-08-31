@@ -490,3 +490,28 @@ input[type="search"]:focus {
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
+
+/* Login page related styling - to be improved */
+.login-panel {
+  width: fit-content;
+  margin: 0 auto;
+}
+
+.login-panel h1 {
+  text-align: center;
+}
+
+#login-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#login-form > div {
+  display: flex;
+  flex-direction: column;
+}
+
+#login-form input {
+  width: 250px;
+}
