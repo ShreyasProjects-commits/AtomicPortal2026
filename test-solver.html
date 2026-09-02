@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>solver.js — local test (no Docker / Supabase needed)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.2rem; }
+    .hint { color: #94a3b8; font-size: 0.9rem; }
+    .case { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+    .case h2 { margin: 0 0 0.5rem; font-size: 1rem; }
+    .ok { color: #86efac; }
+    .fail { color: #fca5a5; }
+    pre { background: #0b1220; border: 1px solid #334155; border-radius: 6px; padding: 0.75rem; overflow: auto; font-size: 0.8rem; }
+    button { background: #38bdf8; border: none; color: #0f172a; font-weight: 600; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>solver.js live test</h1>
+  <p class="hint">
+    Runs your real <code>supabase/functions/_shared/solver.js</code> straight in the browser,
+    hitting the live atomic-solver API. No Docker, no Supabase CLI, no Node needed — just serve
+    this folder (e.g. VS Code Live Server) and open this page over <code>http://</code>.
+  </p>
+  <p class="hint">
+    Note: this calls atomic-solver directly from the browser, which is <em>not</em> how FitPortal
+    calls it in production (that happens server-side, from the Edge Function). If every case below
+    fails with a network/CORS-looking error but your earlier <code>curl</code> test worked, that
+    likely means atomic-solver doesn't allow browser (CORS) requests — which is fine, it's not
+    meant to be called from a browser. It would just mean this particular test page can't reach it,
+    not that the fix is wrong.
+  </p>
+  <button id="run">Run tests</button>
+  <div id="output"></div>
+
+  <script type="module">
+    // Minimal Deno stub — solver.js only needs Deno.env.get at module load time.
+    window.Deno = {
+      env: {
+        get: (key) =>
+          key === "FITSOLVER_URL" ? "https://atomic-solver.onrender.com/api/solve" : undefined,
+      },
+    };
+
+    const output = document.getElementById("output");
+    const runBtn = document.getElementById("run");
+
+    const cases = [
+      {
+        label: "Basic order (two different items, should pack)",
+        payload: {
+          orderId: "test-order-1",
+          items: [
+            { id: "item-a", name: "Widget A", dimensions: { length: 20, width: 10, height: 5, unit: "cm" }, weight: { value: 1, unit: "kg" }, quantity: 1 },
+            { id: "item-b", name: "Widget B", dimensions: { length: 15, width: 30, height: 7.5, unit: "cm" }, weight: { value: 2.8, unit: "kg" }, quantity: 1 },
+          ],
+          containers: [
+            { id: "cont-med", name: "Medium carton", dimensions: { length: 40, width: 40, height: 40, unit: "cm" }, maxWeight: { value: 15.2, unit: "kg" } },
+          ],
+        },
+      },
+      {
+        label: "Repeated item (quantity 3)",
+        payload: {
+          orderId: "test-order-2",
+          items: [
+            { id: "item-c", name: "Small box", dimensions: { length: 10, width: 10, height: 10, unit: "cm" }, weight: { value: 0.5, unit: "kg" }, quantity: 3 },
+          ],
+          containers: [
+            { id: "cont-sml", name: "Small carton", dimensions: { length: 15, width: 15, height: 15, unit: "cm" }, maxWeight: { value: 8.5, unit: "kg" } },
+          ],
+        },
+      },
+      {
+        label: "Item too big to fit (checks unpackedItems)",
+        payload: {
+          orderId: "test-order-3",
+          items: [
+            { id: "item-huge", name: "Oversized crate", dimensions: { length: 500, width: 500, height: 500, unit: "cm" }, weight: { value: 5, unit: "kg" }, quantity: 1 },
+          ],
+          containers: [
+            { id: "cont-med", name: "Medium carton", dimensions: { length: 40, width: 40, height: 40, unit: "cm" }, maxWeight: { value: 15.2, unit: "kg" } },
+          ],
+        },
+      },
+    ];
+
+    async function runAll() {
+      output.innerHTML = "";
+      runBtn.disabled = true;
+      runBtn.textContent = "Running…";
+
+      const { runOptimize } = await import("./supabase/functions/_shared/solver.js");
+
+      for (const c of cases) {
+        const box = document.createElement("div");
+        box.className = "case";
+        box.innerHTML = `<h2>${c.label}</h2><p class="hint">running…</p>`;
+        output.appendChild(box);
+
+        try {
+          const result = await runOptimize(c.payload);
+          box.innerHTML = `
+            <h2>${c.label} — <span class="ok">ok</span></h2>
+            <p class="hint">payload sent (FitPortal shape):</p>
+            <pre>${escapeHtml(JSON.stringify(c.payload, null, 2))}</pre>
+            <p class="hint">result (translated back):</p>
+            <pre>${escapeHtml(JSON.stringify(result, null, 2))}</pre>
+          `;
+        } catch (err) {
+          box.innerHTML = `
+            <h2>${c.label} — <span class="fail">failed</span></h2>
+            <p class="hint">payload sent:</p>
+            <pre>${escapeHtml(JSON.stringify(c.payload, null, 2))}</pre>
+            <p class="fail">${escapeHtml(err.message ?? String(err))}</p>
+          `;
+        }
+      }
+
+      runBtn.disabled = false;
+      runBtn.textContent = "Run tests";
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+    }
+
+    runBtn.addEventListener("click", runAll);
+  </script>
+</body>
+</html>

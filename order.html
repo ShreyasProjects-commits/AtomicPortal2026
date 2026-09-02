@@ -79,7 +79,22 @@
         <section class="panel" id="result-panel" hidden>
           <h2>Packing result</h2>
           <p id="unpacked-note" class="banner warn" hidden></p>
-          <pre id="result-json"></pre>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Container</th>
+                  <th>Items packed</th>
+                  <th>Utilisation</th>
+                </tr>
+              </thead>
+              <tbody id="result-summary-body"></tbody>
+            </table>
+          </div>
+          <details class="raw-json">
+            <summary>Raw result JSON</summary>
+            <pre id="result-json"></pre>
+          </details>
         </section>
       </div>
     </main>

@@ -156,3 +156,8 @@ catalogue needed to draw 3D boxes. Join placements to catalogue rows by `itemId`
 | New optional field | FitPortal + affected sibling |
 | Required field added/removed | All three divisions |
 | Unit change (cm/kg) | All three divisions |
+
+# for testing Solver website
+curl -X POST https://atomic-solver.onrender.com/api/solve \ -H "Content-Type: application/json" \   -d '{    "orderId": "test-1",    "items": [{"id":"i1","name":"Widget box","dimensions":{"length":20,"width":15,"height":10,"unit":"cm"},"weight":{"value":2.5,"unit":"kg"},"quantity":4}],    "containers": [{"id":"c1","name":"Standard carton","dimensions":{"length":60,"width":40,"height":40,"unit":"cm"},"maxWeight":{"value":30,"unit":"kg"}}]  }'
+
+curl -g -X POST https://atomic-solver.onrender.com/api/solve -H "Content-Type: application/json" --data-binary "@payload.json"

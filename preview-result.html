@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>FitPortal — Result panel preview (sample data, no backend)</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>FitPortal</h1>
+      <span class="subtitle">Result panel preview — sample data, not a real order</span>
+    </header>
+
+    <main id="app">
+      <section class="panel" id="result-panel">
+        <h2>Packing result</h2>
+        <p id="unpacked-note" class="banner warn"></p>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Container</th>
+                <th>Items packed</th>
+                <th>Utilisation</th>
+              </tr>
+            </thead>
+            <tbody id="result-summary-body"></tbody>
+          </table>
+        </div>
+        <details class="raw-json">
+          <summary>Raw result JSON</summary>
+          <pre id="result-json"></pre>
+        </details>
+      </section>
+    </main>
+
+    <script type="module">
+      // ---- Sample data standing in for a real order + solver result ----
+      const order = {
+        items: [
+          { id: "item-a", name: "Widget A" },
+          { id: "item-b", name: "Widget B" },
+          { id: "item-huge", name: "Oversized crate" },
+        ],
+        containers: [
+          { id: "cont-med", name: "Medium carton" },
+          { id: "cont-sml", name: "Small carton" },
+        ],
+        result: {
+          packed_containers: [
+            {
+              containerId: "cont-med",
+              utilisation: 0.068,
+              placements: [{ itemId: "item-a" }, { itemId: "item-b" }],
+            },
+            {
+              containerId: "cont-sml",
+              utilisation: 0.7407407407407407,
+              placements: [{ itemId: "item-a" }, { itemId: "item-a" }, { itemId: "item-a" }],
+            },
+          ],
+          unpacked_items: [{ itemId: "item-huge", reason: "no_container_fits" }],
+        },
+      };
+      // --------------------------------------------------------------------
+
+      const resultPre = document.getElementById("result-json");
+      const resultSummaryBody = document.getElementById("result-summary-body");
+      const unpackedNote = document.getElementById("unpacked-note");
+
+      resultPre.textContent = JSON.stringify(order.result, null, 2);
+
+      const itemNameById = new Map(order.items.map((i) => [i.id, i.name]));
+      const containerNameById = new Map(order.containers.map((c) => [c.id, c.name]));
+
+      resultSummaryBody.innerHTML = order.result.packed_containers
+        .map((box) => renderPackedRow(box, itemNameById, containerNameById))
+        .join("");
+
+      const unpacked = order.result.unpacked_items;
+      unpackedNote.textContent =
+        `${unpacked.length} item(s) could not be packed: ` +
+        unpacked.map((u) => itemNameById.get(u.itemId) ?? u.itemId).join(", ");
+
+      function renderPackedRow(box, itemNameById, containerNameById) {
+        const counts = new Map();
+        for (const p of box.placements ?? []) {
+          const name = itemNameById.get(p.itemId) ?? p.itemId;
+          counts.set(name, (counts.get(name) ?? 0) + 1);
+        }
+        const itemsLabel =
+          [...counts.entries()]
+            .map(([name, n]) => (n > 1 ? `${esc(name)} ×${n}` : esc(name)))
+            .join(", ") || "—";
+        const containerLabel = containerNameById.get(box.containerId) ?? box.containerId;
+        const pct = box.utilisation != null ? Math.round(box.utilisation * 100) : null;
+        const utilCell =
+          pct != null
+            ? `<div class="util-bar"><div class="util-bar-fill" style="width:${pct}%"></div></div><span class="util-label">${pct}%</span>`
+            : `<span class="util-label">—</span>`;
+        return `<tr><td>${esc(containerLabel)}</td><td>${itemsLabel}</td><td>${utilCell}</td></tr>`;
+      }
+
+      function esc(text) {
+        return String(text ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;");
+      }
+    </script>
+  </body>
+</html>
