@@ -235,7 +235,7 @@ button.primary:hover { filter: brightness(1.08); }
 
 /* ---------- Result panel ---------- */
 #result-panel { animation: rise 0.25s ease both; }
-pre#result {
+pre#result-json {
   background: var(--bg-soft);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -244,6 +244,38 @@ pre#result {
   font-size: 0.85rem;
   max-height: 420px;
 }
+
+.util-bar {
+  display: inline-block;
+  width: 90px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  vertical-align: middle;
+  margin-right: 0.5rem;
+}
+.util-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: inherit;
+}
+.util-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+  vertical-align: middle;
+}
+
+details.raw-json { margin-top: 1rem; }
+details.raw-json summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.85rem;
+  user-select: none;
+}
+details.raw-json summary:hover { color: var(--text); }
+details.raw-json pre#result-json { margin-top: 0.5rem; }
 
 /* ---------- About page ---------- */
 .panel p { color: var(--muted); }
@@ -520,6 +552,7 @@ input[type="search"]:focus {
   display: flex;
   flex-direction: column;
   align-items: center;
+  
 }
 
 #signup-form > div {
