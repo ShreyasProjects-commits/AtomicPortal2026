@@ -515,3 +515,28 @@ input[type="search"]:focus {
 #login-form input {
   width: 250px;
 }
+
+#signup-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#signup-form > div {
+  display: flex;
+  flex-direction: column;
+}
+
+#signup-form input,
+#signup-form select {
+  width: 250px;
+}
+
+.auth-switch {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.88rem;
+  margin-top: 1rem;
+}
+.auth-switch a { color: var(--accent); text-decoration: none; }
+.auth-switch a:hover { text-decoration: underline; }

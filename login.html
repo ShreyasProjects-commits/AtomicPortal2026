@@ -19,7 +19,7 @@
     </header>
 
     <main>
-      <div class="panel login-panel">
+      <div class="panel login-panel" id="login-panel">
         <h1>Login</h1>
         <form id="login-form">
           <div>
@@ -31,8 +31,43 @@
             <input type="password" id="password" placeholder="********" required> <br>
           </div>
 
+          <p id="login-error" class="import-status error" hidden></p>
+
           <button type="submit" class="btn primary-btn login-btn">Login</button>
         </form>
+        <p class="auth-switch">Don't have an account? <a href="#" id="show-signup">Sign up here</a></p>
+      </div>
+
+      <div class="panel login-panel" id="signup-panel" hidden>
+        <h1>Sign Up</h1>
+        <form id="signup-form">
+          <div>
+            <label for="signup-email">Email:</label><br>
+            <input type="email" id="signup-email" placeholder="abc@domain.com" required> <br>
+          </div>
+          <div>
+            <label for="signup-password">Password:</label><br>
+            <input type="password" id="signup-password" placeholder="********" required> <br>
+          </div>
+          <div>
+            <label for="signup-confirm-password">Confirm Password:</label><br>
+            <input type="password" id="signup-confirm-password" placeholder="********" required> <br>
+          </div>
+          <div>
+            <label for="signup-role">Role:</label><br>
+            <select id="signup-role" required>
+              <option value="" disabled selected>Select a role&hellip;</option>
+              <option value="admin">Admin</option>
+              <option value="warehouse_worker">Warehouse Worker</option>
+            </select> <br>
+          </div>
+
+          <p id="signup-error" class="import-status error" hidden></p>
+
+          <button type="submit" class="btn primary-btn login-btn">Sign Up</button>
+        </form>
+        <p class="auth-switch">Already have an account? <a href="#" id="show-login">Log in here</a></p>
+      </div>
     </main>
 
     <script type="module" src="/src/auth.js"></script>
