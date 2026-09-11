@@ -6,14 +6,14 @@ export const API_BASE =
   "https://obhsgsftqetjqqyvqelh.supabase.co/functions/v1";
 
 export const FITVISUALIZER_URL =
-  window.FITVISUALIZER_URL ?? "http://localhost:5173/view";
+  window.FITVISUALIZER_URL ?? "https://atomic-visualiser.vercel.app/";
 
 export function viewerUrl(orderId) {
   const base = FITVISUALIZER_URL.replace(/\/$/, "");
   return `${base}?orderId=${encodeURIComponent(orderId)}`;
 }
 
-/** In-portal iframe wrapper — keeps FitPortal nav chrome. */
+// In-portal iframe wrapper — keeps FitPortal nav chrome. 
 export function visualizePageUrl(orderId) {
   return `visualize.html?id=${encodeURIComponent(orderId)}`;
 }
