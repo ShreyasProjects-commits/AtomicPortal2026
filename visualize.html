@@ -39,13 +39,40 @@
     </main>
 
     <script type="module">
-      import { viewerUrl } from "./src/config.js";
+      import { viewerUrl, FITVISUALIZER_URL, orderResultApiUrl } from "./src/config.js";
 
       const orderId = new URLSearchParams(location.search).get("id");
       const iframe = document.getElementById("viewer");
       const errEl = document.getElementById("viz-error");
       const title = document.getElementById("viz-title");
       const back = document.getElementById("back-link");
+
+      // derive a strict origin for security checks
+      const targetOrigin = new URL(FITVISUALIZER_URL).origin;
+
+      function postToVisualizer(data) {
+        if (!iframe.contentWindow) return;
+        iframe.contentWindow.postMessage(
+          {
+            type: "viz-data",
+            version: 1,
+            payload: data,
+          },
+          targetOrigin,
+        );
+      }
+
+      async function sendLiveResult() {
+        const response = await fetch(orderResultApiUrl(orderId));
+        if (!response.ok) {
+          throw new Error(`order-result request failed: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log("visualize.html fetched order-result", result);
+        postToVisualizer(result);
+        console.log("visualize.html posted viz-data to iframe", targetOrigin);
+      }
 
       if (!orderId) {
         title.textContent = "Missing order";
@@ -56,6 +83,14 @@
         back.href = `order.html?id=${encodeURIComponent(orderId)}`;
         iframe.src = viewerUrl(orderId);
         iframe.hidden = false;
+
+        iframe.addEventListener("load", () => {
+          sendLiveResult().catch((error) => {
+            errEl.hidden = false;
+            errEl.textContent = "Unable to load visualizer data. Check the API and try again.";
+            console.error(error);
+          });
+        });
       }
     </script>
 
