@@ -1,4 +1,8 @@
 import { API_BASE, formatDate, statusLabel, visualizePageUrl } from "./config.js";
+import { requireAuth } from "./auth.js";
+
+// Checks if authenticated, redirects if not:
+const user = await requireAuth();
 
 const ordersBody = document.getElementById("orders-body");
 const ordersEmpty = document.getElementById("orders-empty");

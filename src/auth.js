@@ -69,3 +69,38 @@ signupForm?.addEventListener("submit", async function(event) {
         return;
     }
 })
+
+// Checks authentication, returns true if signed in, false otherwise.
+export async function isAuth() {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if(error) return false;
+    return user != null;
+}
+
+// Checks authentication, returns the user object if authenticated, redirects to home and returns null otherwise.
+export async function requireAuth() {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if(!user || error) {
+        window.location.replace("/login.html");
+        return null;
+    }
+    return user;
+}
+
+// Checks authorisation, returns true if user is correct role, false otherwise.
+export async function requireRole(requiredRole) {
+    const user = await requireAuth();
+    if(!user) return false;
+
+    const { data, error } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+    if(error || !data) return false;
+
+    const role = data.role;
+
+    return role === requiredRole;
+}
