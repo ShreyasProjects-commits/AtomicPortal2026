@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FitPortal — My profile</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>FitPortal</h1>
+      <span class="subtitle">My profile</span>
+      <nav class="topnav">
+        <a href="index.html">Home</a>
+        <a href="worker-orders.html">My Orders</a>
+        <a href="portfolio-worker.html" class="active">Profile</a>
+        <a href="login.html" class="btn primary-btn login-btn">Login / Sign Up</a>
+      </nav>
+    </header>
+
+    <main id="app">
+      <p id="load-error" class="banner error" hidden></p>
+
+      <section class="panel" id="stats-panel" hidden>
+        <h2>Your stats</h2>
+        <div class="stat-grid">
+          <div class="stat-tile">
+            <div class="stat-value" id="stat-assigned">—</div>
+            <div class="stat-label">Orders assigned</div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-value" id="stat-open">—</div>
+            <div class="stat-label">Open right now</div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-value" id="stat-completed">—</div>
+            <div class="stat-label">Orders completed</div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-value" id="stat-days">—</div>
+            <div class="stat-label">Days worked</div>
+          </div>
+        </div>
+        <p class="hint">
+          "Days worked" counts distinct days on which one of your orders was completed.
+        </p>
+      </section>
+    </main>
+
+    <script type="module" src="/src/portfolio-worker.js"></script>
+    <script type="module" src="/src/nav.js"></script>
+
+    <footer>
+      <div class="fgrid">
+        <div>
+          <div class="fbrand">FitPortal</div>
+          <p>The access layer for Project Perfect Fit.</p>
+        </div>
+        <div>
+          <h3>Portal</h3>
+          <a href="worker-orders.html">My Orders</a>
+          <a href="portfolio-worker.html">Profile</a>
+        </div>
+      </div>
+      <div class="footer-bottom">COMP4050 · Atomic Fit division · Client: Thomax</div>
+    </footer>
+  </body>
+</html>

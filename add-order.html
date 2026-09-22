@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FitPortal — Add order</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>FitPortal</h1>
+      <span class="subtitle">Add order</span>
+      <nav class="topnav">
+        <a href="index.html">Home</a>
+        <a href="orders.html">Orders</a>
+        <a href="integrations.html">Integrations</a>
+        <a href="about.html">About</a>
+        <a href="login.html" class="btn primary-btn login-btn">Login / Sign Up</a>
+      </nav>
+    </header>
+
+    <main id="app">
+      <section class="panel">
+        <div class="detail-header">
+          <div>
+            <h2>Add an order manually</h2>
+            <p class="hint">
+              Pick from the existing item &amp; container catalog. For bulk
+              imports, use <a href="orders.html">CSV import</a> instead.
+            </p>
+          </div>
+          <a class="btn" href="orders.html">← Back to queue</a>
+        </div>
+
+        <p id="load-error" class="banner error" hidden></p>
+
+        <form id="add-order-form" hidden>
+          <div class="form-row">
+            <label for="external-ref">Order reference (optional)</label>
+            <input type="text" id="external-ref" placeholder="e.g. ORD-1099" />
+          </div>
+
+          <h3>Items</h3>
+          <p class="hint">Tick the items in this order and set a quantity for each.</p>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Name</th>
+                  <th>Dimensions (cm)</th>
+                  <th>Weight (kg)</th>
+                  <th>Qty</th>
+                </tr>
+              </thead>
+              <tbody id="items-picker"></tbody>
+            </table>
+          </div>
+
+          <h3>Containers</h3>
+          <p class="hint">Tick the container type(s) available for this order.</p>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Name</th>
+                  <th>Dimensions (cm)</th>
+                  <th>Max weight (kg)</th>
+                </tr>
+              </thead>
+              <tbody id="containers-picker"></tbody>
+            </table>
+          </div>
+
+          <p id="form-error" class="banner error" hidden></p>
+
+          <div class="cta-row">
+            <button type="submit" class="btn primary-btn" id="submit-btn">Create order</button>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <script type="module" src="/src/add-order.js"></script>
+    <script type="module" src="/src/nav.js"></script>
+
+    <footer>
+      <div class="fgrid">
+        <div>
+          <div class="fbrand">FitPortal</div>
+          <p>The access layer for Project Perfect Fit.</p>
+        </div>
+        <div>
+          <h3>Portal</h3>
+          <a href="orders.html">Orders</a>
+          <a href="integrations.html">Integrations</a>
+          <a href="about.html">About</a>
+        </div>
+        <div>
+          <h3>Sub-systems</h3>
+          <a href="integrations.html">FitSolver</a>
+          <a href="integrations.html">FitVisualizer</a>
+        </div>
+      </div>
+      <div class="footer-bottom">COMP4050 · Atomic Fit division · Client: Thomax</div>
+    </footer>
+  </body>
+</html>

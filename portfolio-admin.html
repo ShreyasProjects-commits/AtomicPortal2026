@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FitPortal — Admin portfolio</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>FitPortal</h1>
+      <span class="subtitle">Admin portfolio</span>
+      <nav class="topnav">
+        <a href="index.html">Home</a>
+        <a href="orders.html">Orders</a>
+        <a href="add-order.html">Add Order</a>
+        <a href="integrations.html">Integrations</a>
+        <a href="portfolio-admin.html" class="active">Portfolio</a>
+        <a href="about.html">About</a>
+        <a href="login.html" class="btn primary-btn login-btn">Login / Sign Up</a>
+      </nav>
+    </header>
+
+    <main id="app">
+      <p id="load-error" class="banner error" hidden></p>
+
+      <section class="panel" id="totals-panel" hidden>
+        <h2>Overview</h2>
+        <div class="stat-grid">
+          <div class="stat-tile">
+            <div class="stat-value" id="stat-total-orders">—</div>
+            <div class="stat-label">Total orders</div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-value" id="stat-solved">—</div>
+            <div class="stat-label">Solved</div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-value" id="stat-unassigned">—</div>
+            <div class="stat-label">Unassigned</div>
+          </div>
+          <div class="stat-tile">
+            <div class="stat-value" id="stat-workers">—</div>
+            <div class="stat-label">Active workers</div>
+          </div>
+        </div>
+        <p class="hint" id="status-breakdown"></p>
+      </section>
+
+      <section class="panel" id="workers-panel" hidden>
+        <h2>Workers</h2>
+        <p class="hint">Assigned / completed order counts and days worked, per worker. Promote, demote, or disable an account here.</p>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Active</th>
+                <th>Assigned</th>
+                <th>Open</th>
+                <th>Completed</th>
+                <th>Days worked</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="workers-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/src/portfolio-admin.js"></script>
+    <script type="module" src="/src/nav.js"></script>
+
+    <footer>
+      <div class="fgrid">
+        <div>
+          <div class="fbrand">FitPortal</div>
+          <p>The access layer for Project Perfect Fit.</p>
+        </div>
+        <div>
+          <h3>Portal</h3>
+          <a href="orders.html">Orders</a>
+          <a href="integrations.html">Integrations</a>
+          <a href="about.html">About</a>
+        </div>
+        <div>
+          <h3>Sub-systems</h3>
+          <a href="integrations.html">FitSolver</a>
+          <a href="integrations.html">FitVisualizer</a>
+        </div>
+      </div>
+      <div class="footer-bottom">COMP4050 · Atomic Fit division · Client: Thomax</div>
+    </footer>
+  </body>
+</html>

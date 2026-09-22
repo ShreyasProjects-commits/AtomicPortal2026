@@ -21,6 +21,114 @@
 
     <main id="app">
       <section class="panel">
+        <div class="detail-header">
+          <div>
+            <h2>Order queue</h2>
+            <p class="hint">
+              All orders, who they're assigned to, and their packing status.
+            </p>
+          </div>
+          <div class="cta-row">
+            <a href="add-order.html" class="btn primary-btn">+ Add order</a>
+            <button type="button" id="auto-assign" class="btn">Auto-assign unassigned</button>
+          </div>
+        </div>
+
+        <div id="orders-error" class="banner error" hidden></div>
+        <p id="auto-assign-status" class="hint" hidden></p>
+
+        <label class="search-label" for="order-search">Search</label>
+        <input type="search" id="order-search" placeholder="Filter by ref, id, or status…" />
+
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Order ref</th>
+                <th>Status</th>
+                <th>Assigned to</th>
+                <th>Created</th>
+                <th>Updated</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="orders-body"></tbody>
+          </table>
+        </div>
+        <p id="orders-empty" class="empty-state" hidden>
+          No orders yet — add one manually or import a CSV below.
+        </p>
+      </section>
+
+      <section class="panel">
+        <h2>Import orders (CSV)</h2>
+        <p class="hint">
+          Bulk import — simulates orders arriving from the Thomax business page.
+          Format documented in <code>docs/import-contract.md</code> ·
+          <a href="samples/orders-import.csv" download>sample CSV</a> ·
+          for a single order, use <a href="add-order.html">Add order</a> instead.
+        </p>
+
+        <form id="import-form" class="import-form">
+          <input type="file" id="csv-file" accept=".csv,text/csv" required />
+          <label class="checkbox-label">
+            <input type="checkbox" id="replace-existing" />
+            Replace existing orders with the same reference
+          </label>
+          <button type="submit" class="primary">Upload &amp; optimise</button>
+        </form>
+        <p id="import-status" class="import-status"></p>
+      </section>
+    </main>
+
+    <script type="module" src="/src/orders.js"></script>
+    <script type="module" src="/src/nav.js"></script>
+
+    <footer>
+      <div class="fgrid">
+        <div>
+          <div class="fbrand">FitPortal</div>
+          <p>The access layer for Project Perfect Fit.</p>
+        </div>
+        <div>
+          <h3>Portal</h3>
+          <a href="orders.html" class="active">Orders</a>
+          <a href="integrations.html">Integrations</a>
+          <a href="about.html">About</a>
+        </div>
+        <div>
+          <h3>Sub-systems</h3>
+          <a href="integrations.html">FitSolver</a>
+          <a href="integrations.html">FitVisualizer</a>
+        </div>
+      </div>
+      <div class="footer-bottom">COMP4050 · Atomic Fit division · Client: Thomax</div>
+    </footer>
+  </body>
+</html>
+<!--<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FitPortal — Orders</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>FitPortal</h1>
+      <span class="subtitle">Warehouse order queue</span>
+      <nav class="topnav">
+        <a href="index.html">Home</a>
+        <a href="orders.html" class="active">Orders</a>
+        <a href="integrations.html">Integrations</a>
+        <a href="about.html">About</a>
+        <a href="login.html" class="btn primary-btn login-btn">Login / Sign Up</a>
+      </nav>
+    </header>
+
+    <main id="app">
+      <section class="panel">
         <h2>Order queue</h2>
         <p class="hint">
           Select an imported order to view details and open the 3D packing plan in FitVisualizer.
@@ -94,4 +202,4 @@
       <div class="footer-bottom">COMP4050 · Atomic Fit division · Client: Thomax</div>
     </footer>
   </body>
-</html>
+</html>-->

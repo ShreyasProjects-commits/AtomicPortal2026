@@ -4,6 +4,91 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { handleCors, json, errorResponse } from "../_shared/cors.js";
+import { UUID_RE } from "../_shared/supabase.js";
+import { requireRole } from "../_shared/authz.js";
+import { loadOrderForOptimize } from "../_shared/orders.js";
+import {
+  markOrderFailed,
+  persistOptimizeResult,
+  runOptimize,
+} from "../_shared/solver.js";
+
+serve(async (req) => {
+  const cors = handleCors(req);
+  if (cors) return cors;
+
+  if (req.method !== "POST") {
+    return errorResponse("method_not_allowed", "POST only", 405);
+  }
+
+  // Only admins can run the optimiser — this was a stubbed TODO in the
+  // original architecture doc ("supervisor-only action"); now enforced
+  // server-side, since a hidden button client-side isn't real security.
+  const auth = await requireRole(req, ["admin"]);
+  if (auth.error) return errorResponse(auth.error, auth.message, auth.status);
+
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return errorResponse("invalid_json", "Body must be JSON", 400);
+  }
+
+  const orderId = body.orderId;
+  const shouldPersist = orderId && UUID_RE.test(orderId);
+
+  // requireRole() already made a service-role client to check the caller's
+  // profile — reuse it instead of creating a second one.
+  const supabase = shouldPersist ? auth.supabase : undefined;
+
+  let payload = body;
+  if (shouldPersist && supabase && (!body.items?.length || !body.containers?.length)) {
+    try {
+      payload = await loadOrderForOptimize(supabase, orderId);
+      await supabase
+        .from("orders")
+        .update({ status: "submitted", updated_at: new Date().toISOString() })
+        .eq("id", orderId);
+    } catch (err) {
+      if (err.message === "not_found") {
+        return errorResponse("not_found", "Order not found", 404);
+      }
+      return errorResponse("invalid_request", err.message);
+    }
+  } else if (!body.items?.length || !body.containers?.length) {
+    return errorResponse(
+      "items_and_containers_required",
+      "Provide items and containers, or orderId to re-run an existing order",
+    );
+  } else if (shouldPersist && supabase) {
+    await supabase
+      .from("orders")
+      .update({ status: "submitted", updated_at: new Date().toISOString() })
+      .eq("id", orderId);
+  }
+
+  try {
+    const result = await runOptimize(payload);
+    if (shouldPersist && supabase) {
+      await persistOptimizeResult(supabase, orderId, result);
+    }
+    return json(result, 200);
+  } catch (err) {
+    if (shouldPersist && supabase) {
+      await markOrderFailed(supabase, orderId);
+    }
+    const code = err.message === "solver_unreachable"
+      ? "solver_unreachable"
+      : "solver_error";
+    return errorResponse(code, err.message, 502);
+  }
+});
+/*// Supabase Edge Function: POST /optimize
+// Forwards an order to FitSolver and persists the result when orderId is a UUID.
+// Body: full api-contract payload OR { "orderId": "<uuid>" } to re-run from DB.
+
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { handleCors, json, errorResponse } from "../_shared/cors.js";
 import { getServiceClient, UUID_RE } from "../_shared/supabase.js";
 import { loadOrderForOptimize } from "../_shared/orders.js";
 import {
@@ -80,4 +165,4 @@ serve(async (req) => {
       : "solver_error";
     return errorResponse(code, err.message, 502);
   }
-});
+});*/

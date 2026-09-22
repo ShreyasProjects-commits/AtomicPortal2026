@@ -26,6 +26,117 @@
           Warehouse portal for Project Perfect Fit — browse imported orders and open
           3D packing views for the warehouse floor.
         </p>
+        <div class="cta-row" id="hero-cta">
+          <a class="btn primary-btn" href="login.html">Login / Sign up</a>
+          <a class="btn" href="about.html">About this project</a>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Users</h2>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <h3>Warehouse workers</h3>
+            <p>See only the orders assigned to them, with a visual, item-by-item packing view.</p>
+          </div>
+          <div class="feature-card">
+            <h3>Admins</h3>
+            <p>Create orders, run the optimisation engine, and assign orders to workers.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Sub-divisions of the team</h2>
+        <div class="subsystem-list">
+          <div class="subsystem-card">
+            <span class="tag">01 · engine</span>
+            <h3>FitSolver</h3>
+            <p>Three-dimensional bin packing for a given set of items and container sizes.</p>
+          </div>
+          <div class="subsystem-card active">
+            <span class="tag">02 · access</span>
+            <h3>FitPortal <em>(this site)</em></h3>
+            <p>Order queue, import pipeline, and FitVisualizer handoff.</p>
+          </div>
+          <div class="subsystem-card">
+            <span class="tag">03 · view</span>
+            <h3>FitVisualizer</h3>
+            <p>A mobile-friendly, interactive view of packing results.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/src/nav.js"></script>
+    <script type="module">
+      import { getCurrentUserAndProfile } from "/src/authz.js";
+
+      // Role-aware hero CTAs — swapped after we know who (if anyone) is
+      // signed in, same as the nav bar.
+      const { user, profile } = await getCurrentUserAndProfile();
+      const cta = document.getElementById("hero-cta");
+      if (user && profile?.role === "admin") {
+        cta.innerHTML = `
+          <a class="btn primary-btn" href="orders.html">Open order queue</a>
+          <a class="btn" href="add-order.html">Add an order</a>`;
+      } else if (user && profile?.role === "warehouse_worker") {
+        cta.innerHTML = `
+          <a class="btn primary-btn" href="worker-orders.html">My orders</a>
+          <a class="btn" href="portfolio-worker.html">My profile</a>`;
+      }
+    </script>
+
+    <footer>
+      <div class="fgrid">
+        <div>
+          <div class="fbrand">FitPortal</div>
+          <p>The access layer for Project Perfect Fit.</p>
+        </div>
+        <div>
+          <h3>Portal</h3>
+          <a href="orders.html">Orders</a>
+          <a href="integrations.html">Integrations</a>
+          <a href="about.html">About</a>
+        </div>
+        <div>
+          <h3>Sub-systems</h3>
+          <a href="integrations.html">FitSolver</a>
+          <a href="integrations.html">FitVisualizer</a>
+        </div>
+      </div>
+      <div class="footer-bottom">COMP4050 · Atomic Fit division · Client: Thomax</div>
+    </footer>
+  </body>
+</html>
+<!--<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FitPortal</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>FitPortal</h1>
+      <span class="subtitle">Project Perfect Fit · Atomic Fit division</span>
+      <nav class="topnav">
+        <a href="index.html" class="active">Home</a>
+        <a href="orders.html">Orders</a>
+        <a href="integrations.html">Integrations</a>
+        <a href="about.html">About</a>
+        <a href="login.html" class="btn primary-btn login-btn">Login / Sign Up</a>
+      </nav>
+    </header>
+
+    <main id="app">
+      <section class="panel hero-panel">
+        <h1>FitPortal</h1>
+        <p class="hint">
+          Warehouse portal for Project Perfect Fit — browse imported orders and open
+          3D packing views for the warehouse floor.
+        </p>
         <div class="cta-row">
           <a class="btn primary-btn" href="orders.html">Open order queue</a>
           <a class="btn" href="integrations.html">Integration &amp; API access</a>
@@ -91,4 +202,4 @@
       <div class="footer-bottom">COMP4050 · Atomic Fit division · Client: Thomax</div>
     </footer>
   </body>
-</html>
+</html>-->

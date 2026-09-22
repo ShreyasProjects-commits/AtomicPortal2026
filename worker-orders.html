@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FitPortal — My orders</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>FitPortal</h1>
+      <span class="subtitle">My orders</span>
+      <nav class="topnav">
+        <a href="index.html">Home</a>
+        <a href="worker-orders.html" class="active">My Orders</a>
+        <a href="portfolio-worker.html">Profile</a>
+        <a href="login.html" class="btn primary-btn login-btn">Login / Sign Up</a>
+      </nav>
+    </header>
+
+    <main id="app">
+      <section class="panel">
+        <h2>Orders assigned to you</h2>
+        <p class="hint">Tap an order to see what's in it and how it's packed.</p>
+
+        <div id="orders-error" class="banner error" hidden></div>
+
+        <div id="orders-cards" class="worker-order-cards"></div>
+        <p id="orders-empty" class="empty-state" hidden>
+          Nothing's assigned to you right now — check back later.
+        </p>
+      </section>
+    </main>
+
+    <script type="module" src="/src/worker-orders.js"></script>
+    <script type="module" src="/src/nav.js"></script>
+
+    <footer>
+      <div class="fgrid">
+        <div>
+          <div class="fbrand">FitPortal</div>
+          <p>The access layer for Project Perfect Fit.</p>
+        </div>
+        <div>
+          <h3>Portal</h3>
+          <a href="worker-orders.html">My Orders</a>
+          <a href="portfolio-worker.html">Profile</a>
+        </div>
+      </div>
+      <div class="footer-bottom">COMP4050 · Atomic Fit division · Client: Thomax</div>
+    </footer>
+  </body>
+</html>
