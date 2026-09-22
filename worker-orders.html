@@ -3,13 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FitPortal — Order</title>
+    <title>FitPortal — My orders</title>
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
     <header class="topbar">
       <h1>FitPortal</h1>
-      <span class="subtitle">Order</span>
+      <span class="subtitle">My orders</span>
       <nav class="topnav">
         <a href="index.html">Home</a>
         <a href="worker-orders.html" class="active">My Orders</a>
@@ -19,48 +19,20 @@
     </header>
 
     <main id="app">
-      <p id="order-loading" class="hint">Loading order…</p>
-      <p id="order-error" class="banner error" hidden></p>
+      <section class="panel">
+        <h2>Orders assigned to you</h2>
+        <p class="hint">Tap an order to see what's in it and how it's packed.</p>
 
-      <div id="order-content" hidden>
-        <section class="panel">
-          <div class="detail-header">
-            <div>
-              <h2 id="order-ref">—</h2>
-              <span id="order-status" class="status-pill">—</span>
-              <p id="completed-note" class="hint" hidden>
-                ✓ Completed <span id="completed-at">—</span>
-              </p>
-            </div>
-            <div class="cta-row">
-              <button type="button" id="complete-btn" class="btn primary-btn" hidden>
-                Mark order as complete
-              </button>
-              <a class="btn" href="worker-orders.html">← Back to my orders</a>
-            </div>
-          </div>
-          <p id="not-solved-note" class="banner warn" hidden>
-            This order hasn't been packed yet — check back once it's solved.
-          </p>
-          <p id="complete-error" class="banner error" hidden></p>
-        </section>
+        <div id="orders-error" class="banner error" hidden></div>
 
-        <section class="panel" id="boxes-panel" hidden>
-          <h2>What goes where</h2>
-          <p class="hint">Each card is one box — the items inside it are listed with their item ID.</p>
-          <div id="pack-boxes" class="pack-boxes"></div>
-          <p id="unpacked-note" class="banner warn" hidden></p>
-        </section>
-
-        <section class="panel" id="viz-panel" hidden>
-          <h2>3D view</h2>
-          <iframe id="viewer" title="FitVisualizer 3D packing view" class="viz-frame"></iframe>
-          <p id="viz-error" class="banner error" hidden></p>
-        </section>
-      </div>
+        <div id="orders-cards" class="worker-order-cards"></div>
+        <p id="orders-empty" class="empty-state" hidden>
+          Nothing's assigned to you right now — check back later.
+        </p>
+      </section>
     </main>
 
-    <script type="module" src="/src/worker-order.js"></script>
+    <script type="module" src="/src/worker-orders.js"></script>
     <script type="module" src="/src/nav.js"></script>
 
     <footer>
