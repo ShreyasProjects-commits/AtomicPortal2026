@@ -68,3 +68,43 @@ alter table orders        enable row level security;
 alter table order_items      enable row level security;
 alter table order_containers enable row level security;
 alter table order_results    enable row level security;
+
+-- Profile info for each authenticated user (first/last name + role) --------
+create table if not exists profiles (
+  id          uuid primary key references auth.users (id) on delete cascade,
+  first_name  text not null,
+  last_name   text not null,
+  role        text not null default 'warehouse_worker'
+                check (role in ('admin', 'warehouse_worker')),
+  created_at  timestamptz not null default now()
+);
+
+alter table profiles enable row level security;
+
+-- A user can read their own profile row (needed so the nav bar can show their name)
+create policy "Users can view own profile"
+  on profiles for select
+  using (auth.uid() = id);
+
+-- Auto-create a profile row whenever someone signs up, using the
+-- first_name/last_name/role passed in from the sign-up form.
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  insert into public.profiles (id, first_name, last_name, role)
+  values (
+    new.id,
+    new.raw_user_meta_data ->> 'first_name',
+    new.raw_user_meta_data ->> 'last_name',
+    coalesce(new.raw_user_meta_data ->> 'role', 'warehouse_worker')
+  );
+  return new;
+end;
+$$;
+
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();

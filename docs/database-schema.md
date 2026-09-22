@@ -273,20 +273,29 @@ See `docs/import-contract.md` for CSV column definitions.
 
 ---
 
-## 6. Planned tables (not in `schema.sql` yet)
+## 6. `profiles`
 
-From `Diagrams/erd-final.mermaid` and `docs/auth-and-rls-plan.md`:
+One row per authenticated user, created automatically by a trigger on
+`auth.users` insert (see `supabase/schema.sql`). Populated from the
+`first_name`/`last_name`/`role` metadata passed to `supabase.auth.signUp()`
+on the sign-up form.
 
-### `profiles` (planned)
+| Column | Type | Nullable | Default | Description |
+|---|---|---|---|---|
+| `id` | `uuid` | NO | — | PK, FK → `auth.users(id)` on delete cascade |
+| `first_name` | `text` | NO | — | Given name, from sign-up |
+| `last_name` | `text` | NO | — | Family name, from sign-up |
+| `role` | `text` | NO | `'warehouse_worker'` | `admin` or `warehouse_worker` |
+| `created_at` | `timestamptz` | NO | `now()` | Profile creation time |
 
-| Column | Description |
-|---|---|
-| `id` | PK, FK → `auth.users(id)` |
-| `role` | `viewer` or `supervisor` |
-| `display_name` | Staff display name |
-| `created_at` | Profile creation time |
+RLS is enabled with one policy: a user may `select` their own row
+(`auth.uid() = id`) — used by the nav bar to show the signed-in user's name.
+Rows are written only by the `handle_new_user()` trigger function, never
+directly by the client.
 
-Will enable RLS (viewers read orders; supervisors re-run optimiser).
+(Note: this supersedes the earlier `viewer`/`supervisor`/`display_name` sketch
+in `Diagrams/erd-final.mermaid` and `docs/auth-and-rls-plan.md` — the shipped
+role model is `admin`/`warehouse_worker`, matching the live sign-up form.)
 
 ### ERD-only fields (future)
 

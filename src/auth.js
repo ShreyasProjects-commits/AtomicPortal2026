@@ -4,6 +4,8 @@ const loginForm = document.getElementById('login-form');
 const signupForm = document.getElementById('signup-form');
 const loginPanel = document.getElementById('login-panel');
 const signupPanel = document.getElementById('signup-panel');
+const signupSuccessPanel = document.getElementById('signup-success-panel');
+const signupSuccessEmail = document.getElementById('signup-success-email');
 const showSignup = document.getElementById('show-signup');
 const showLogin = document.getElementById('show-login');
 const loginError = document.getElementById('login-error');
@@ -38,12 +40,16 @@ loginForm.addEventListener("submit", async function(event) {
         loginError.hidden = false;
         return;
     }
+
+    window.location.href = "index.html";
 })
 
 signupForm?.addEventListener("submit", async function(event) {
     event.preventDefault();
     signupError.hidden = true;
 
+    const firstName = document.getElementById("signup-first-name").value;
+    const lastName = document.getElementById("signup-last-name").value;
     const email = document.getElementById("signup-email").value;
     const password = document.getElementById("signup-password").value;
     const confirmPassword = document.getElementById("signup-confirm-password").value;
@@ -59,7 +65,7 @@ signupForm?.addEventListener("submit", async function(event) {
         email: email,
         password: password,
         options: {
-            data: { role: role },
+            data: { first_name: firstName, last_name: lastName, role: role },
         },
     })
     if (error) {
@@ -68,4 +74,8 @@ signupForm?.addEventListener("submit", async function(event) {
         signupError.hidden = false;
         return;
     }
+
+    signupSuccessEmail.textContent = email;
+    signupPanel.hidden = true;
+    signupSuccessPanel.hidden = false;
 })

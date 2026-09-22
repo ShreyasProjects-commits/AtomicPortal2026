@@ -42,6 +42,14 @@
         <h1>Sign Up</h1>
         <form id="signup-form">
           <div>
+            <label for="signup-first-name">First name:</label><br>
+            <input type="text" id="signup-first-name" placeholder="Jane" required> <br>
+          </div>
+          <div>
+            <label for="signup-last-name">Last name:</label><br>
+            <input type="text" id="signup-last-name" placeholder="Doe" required> <br>
+          </div>
+          <div>
             <label for="signup-email">Email:</label><br>
             <input type="email" id="signup-email" placeholder="abc@domain.com" required> <br>
           </div>
@@ -68,9 +76,16 @@
         </form>
         <p class="auth-switch">Already have an account? <a href="#" id="show-login">Log in here</a></p>
       </div>
+
+      <div class="panel login-panel" id="signup-success-panel" hidden>
+        <h1>Check your email</h1>
+        <p>We've sent a verification link to <strong id="signup-success-email"></strong>.
+          Verify your email to finish signing up.</p>
+      </div>
     </main>
 
     <script type="module" src="/src/auth.js"></script>
+    <script type="module" src="/src/nav.js"></script>
 
     <footer>
       <div class="fgrid">

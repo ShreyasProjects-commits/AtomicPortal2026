@@ -69,6 +69,13 @@ img, svg, video, iframe {
 .topnav a:hover { border-color: var(--accent); color: var(--text); }
 .topnav a.active { border-color: var(--accent); color: var(--accent); }
 .topnav a.login-btn { margin-left: auto; }
+.nav-user {
+  margin-left: auto;
+  align-self: center;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+.nav-user + .logout-btn { margin-left: 0; }
 @media (max-width: 640px) {
   .topbar {
     padding: 0.85rem 1rem;
