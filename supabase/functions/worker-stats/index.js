@@ -1,11 +1,14 @@
 // GET /worker-stats            — caller's own stats (admin or worker)
 // GET /worker-stats?scope=admin — admin-only: org totals + per-worker table
 //
-// "Days worked" = distinct calendar dates (from orders.updated_at) on which
-// an order assigned to that worker reached status 'solved'. There's no
-// separate clock-in/attendance feature in this app, so this is derived
+// "Days worked" = distinct calendar dates (from orders.completed_at) on
+// which an order assigned to that worker was marked complete by them. There's
+// no separate clock-in/attendance feature in this app, so this is derived
 // entirely from existing order data rather than needing new tracking.
-// "Orders completed" = orders assigned to that worker with status 'solved'.
+// "Orders completed" = orders assigned to that worker with completed_at set
+// (a worker's own "done" action — see /orders action:"complete") — this is
+// deliberately NOT the same as status:"solved", which just means the
+// optimiser produced a pack plan, not that anyone finished packing it.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { handleCors, json, errorResponse } from "../_shared/cors.js";
@@ -41,20 +44,20 @@ serve(async (req) => {
 async function workerStats(supabase, workerId) {
   const { data: assigned, error } = await supabase
     .from("orders")
-    .select("id, external_ref, status, updated_at")
+    .select("id, external_ref, status, updated_at, completed_at")
     .eq("assigned_worker_id", workerId);
 
   if (error) throw error;
 
   const rows = assigned ?? [];
-  const completed = rows.filter((o) => o.status === "solved");
+  const completed = rows.filter((o) => o.completed_at);
   const daysWorked = new Set(
-    completed.map((o) => new Date(o.updated_at).toISOString().slice(0, 10)),
+    completed.map((o) => new Date(o.completed_at).toISOString().slice(0, 10)),
   );
 
   return {
     assigned_count: rows.length,
-    open_count: rows.filter((o) => o.status === "draft" || o.status === "submitted").length,
+    open_count: rows.filter((o) => !o.completed_at).length,
     completed_count: completed.length,
     failed_count: rows.filter((o) => o.status === "failed").length,
     days_worked: daysWorked.size,
@@ -65,7 +68,7 @@ async function workerStats(supabase, workerId) {
 async function adminStats(supabase) {
   const [{ data: orders, error: ordersErr }, { data: workers, error: workersErr }] =
     await Promise.all([
-      supabase.from("orders").select("id, status, assigned_worker_id, updated_at"),
+      supabase.from("orders").select("id, status, assigned_worker_id, updated_at, completed_at"),
       supabase.from("profiles").select("id, first_name, last_name, role, active"),
     ]);
 
@@ -82,6 +85,7 @@ async function adminStats(supabase) {
       failed: allOrders.filter((o) => o.status === "failed").length,
     },
     unassigned_count: allOrders.filter((o) => !o.assigned_worker_id).length,
+    completed_count: allOrders.filter((o) => o.completed_at).length,
     total_workers: (workers ?? []).filter((w) => w.role === "warehouse_worker").length,
   };
 
@@ -89,9 +93,9 @@ async function adminStats(supabase) {
     .filter((w) => w.role === "warehouse_worker")
     .map((w) => {
       const own = allOrders.filter((o) => o.assigned_worker_id === w.id);
-      const completed = own.filter((o) => o.status === "solved");
+      const completed = own.filter((o) => o.completed_at);
       const daysWorked = new Set(
-        completed.map((o) => new Date(o.updated_at).toISOString().slice(0, 10)),
+        completed.map((o) => new Date(o.completed_at).toISOString().slice(0, 10)),
       );
       return {
         id: w.id,
@@ -99,7 +103,7 @@ async function adminStats(supabase) {
         last_name: w.last_name,
         active: w.active,
         assigned_count: own.length,
-        open_count: own.filter((o) => o.status === "draft" || o.status === "submitted").length,
+        open_count: own.filter((o) => !o.completed_at).length,
         completed_count: completed.length,
         days_worked: daysWorked.size,
       };

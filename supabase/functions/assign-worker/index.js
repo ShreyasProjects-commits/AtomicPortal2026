@@ -64,13 +64,14 @@ async function listWorkers(supabase) {
     return errorResponse("database_error", workersErr.message, 500);
   }
 
-  // Current open workload per worker — orders assigned to them that
-  // haven't reached a terminal state (solved/failed) yet.
+  // Current open workload per worker — orders assigned to them that they
+  // haven't marked complete yet (regardless of solver status: a solved-but-
+  // not-yet-packed order is still real work sitting on their plate).
   const { data: openOrders, error: ordersErr } = await supabase
     .from("orders")
     .select("assigned_worker_id")
     .not("assigned_worker_id", "is", null)
-    .in("status", ["draft", "submitted"]);
+    .is("completed_at", null);
 
   if (ordersErr) {
     return errorResponse("database_error", ordersErr.message, 500);
@@ -143,7 +144,7 @@ async function autoAssign(supabase, body) {
     .from("orders")
     .select("assigned_worker_id")
     .not("assigned_worker_id", "is", null)
-    .in("status", ["draft", "submitted"]);
+    .is("completed_at", null);
   if (openErr) return errorResponse("database_error", openErr.message, 500);
 
   const load = new Map(workers.map((w) => [w.id, 0]));

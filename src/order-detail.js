@@ -138,6 +138,17 @@ function renderOrder(order) {
     ? `${order.assigned_worker.first_name} ${order.assigned_worker.last_name}`
     : "Unassigned";
 
+  // completed_at/completed_by are the worker's own "I finished packing
+  // this" action (see /orders action:"complete") — separate from
+  // order.status, which only reflects whether the optimiser has run.
+  document.getElementById("order-completed").textContent = order.completed_at
+    ? `${formatDate(order.completed_at)}${
+        order.completed_by_profile
+          ? ` by ${order.completed_by_profile.first_name} ${order.completed_by_profile.last_name}`
+          : ""
+      }`
+    : "Not yet";
+
   document.getElementById("items-body").innerHTML = (order.items ?? [])
     .map(
       (item) => `

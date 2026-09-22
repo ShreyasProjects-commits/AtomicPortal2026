@@ -1,6 +1,14 @@
 // GET /orders — list orders (role-filtered) or fetch one by ?id=<uuid>
-// POST /orders — admin-only: manually create a draft order from existing
-//                catalog items/containers (see /catalog for the picker data)
+// POST /orders — two actions, dispatched by body.action:
+//   (default / no action) admin-only: manually create a draft order from
+//     existing catalog items/containers (see /catalog for the picker data)
+//   action: "complete"    { orderId } — the order's assigned worker (or an
+//     admin) marks it as physically finished. Only allowed once the order
+//     has been packed (status "solved") — completed_at/completed_by are
+//     separate from the solver's status on purpose: "solved" means the
+//     optimiser produced a pack plan, "completed" means a worker actually
+//     finished packing it on the floor. Worker stats (days worked, orders
+//     completed) are driven off completed_at, not status.
 // Used by the warehouse portal (no direct DB access from the browser).
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -8,21 +16,23 @@ import { handleCors, json, errorResponse } from "../_shared/cors.js";
 import { getServiceClient, UUID_RE } from "../_shared/supabase.js";
 import { requireRole } from "../_shared/authz.js";
 
-// "assigned_worker:profiles(...)" relies on PostgREST inferring the join
-// from the single FK orders.assigned_worker_id -> profiles.id added in
-// schema-roles-and-assignment.sql. There's only one such FK, so no
-// !constraint_name disambiguator is needed.
+// orders now has two FKs to profiles (assigned_worker_id, completed_by), so
+// each embed must be disambiguated with !<constraint_name> — Postgres's
+// default name for an unnamed single-column FK is <table>_<column>_fkey.
 const ORDER_LIST_SELECT =
   "id, external_ref, status, created_at, updated_at, assigned_worker_id, " +
-  "assigned_worker:profiles ( id, first_name, last_name )";
+  "completed_at, completed_by, " +
+  "assigned_worker:profiles!orders_assigned_worker_id_fkey ( id, first_name, last_name ), " +
+  "completed_by_profile:profiles!orders_completed_by_fkey ( id, first_name, last_name )";
 
 serve(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
 
   // Any signed-in user (admin or warehouse_worker) can read; only admins
-  // can create. requireRole(req, null) below just checks "is someone",
-  // the role split happens per-branch.
+  // can create, and completion has its own worker-or-admin check below.
+  // requireRole(req, null) here just checks "is someone", the role split
+  // happens per-branch.
   const auth = await requireRole(req, null);
   if (auth.error) return errorResponse(auth.error, auth.message, auth.status);
   const { profile, supabase } = auth;
@@ -39,10 +49,21 @@ serve(async (req) => {
   }
 
   if (req.method === "POST") {
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return errorResponse("invalid_json", "Body must be JSON", 400);
+    }
+
+    if (body?.action === "complete") {
+      return completeOrder(supabase, body, profile);
+    }
+
     if (profile.role !== "admin") {
       return errorResponse("forbidden", "Only admins can create orders", 403);
     }
-    return createOrder(req, supabase);
+    return createOrder(body, supabase);
   }
 
   return errorResponse("method_not_allowed", "GET or POST only", 405);
@@ -113,14 +134,7 @@ async function getOrderDetail(supabase, id, profile) {
   });
 }
 
-async function createOrder(req, supabase) {
-  let body;
-  try {
-    body = await req.json();
-  } catch {
-    return errorResponse("invalid_json", "Body must be JSON", 400);
-  }
-
+async function createOrder(body, supabase) {
   const externalRef = typeof body.external_ref === "string" ? body.external_ref.trim() : null;
   const items = Array.isArray(body.items) ? body.items : [];
   const containers = Array.isArray(body.containers) ? body.containers : [];
@@ -172,6 +186,48 @@ async function createOrder(req, supabase) {
   }
 
   return json(order, 201);
+}
+
+async function completeOrder(supabase, body, profile) {
+  const orderId = body.orderId;
+  if (!orderId || !UUID_RE.test(orderId)) {
+    return errorResponse("invalid_request", "orderId must be a UUID");
+  }
+
+  const { data: order, error: orderErr } = await supabase
+    .from("orders")
+    .select("id, status, assigned_worker_id, completed_at")
+    .eq("id", orderId)
+    .maybeSingle();
+
+  if (orderErr) return errorResponse("database_error", orderErr.message, 500);
+  if (!order) return errorResponse("not_found", "Order not found", 404);
+
+  const isAssignedWorker = order.assigned_worker_id === profile.id;
+  if (profile.role !== "admin" && !isAssignedWorker) {
+    // Don't leak that the order exists to a worker it isn't assigned to.
+    return errorResponse("not_found", "Order not found", 404);
+  }
+  if (order.status !== "solved") {
+    return errorResponse(
+      "not_ready",
+      "Order must be packed (status: solved) before it can be marked complete",
+      409,
+    );
+  }
+  if (order.completed_at) {
+    return errorResponse("already_completed", "This order is already marked complete", 409);
+  }
+
+  const { data, error } = await supabase
+    .from("orders")
+    .update({ completed_at: new Date().toISOString(), completed_by: profile.id })
+    .eq("id", orderId)
+    .select(ORDER_LIST_SELECT)
+    .maybeSingle();
+
+  if (error) return errorResponse("database_error", error.message, 500);
+  return json(data);
 }
 /*// GET /orders — list orders or fetch one by ?id=<uuid>
 // Used by the warehouse portal (no direct DB access from the browser).
