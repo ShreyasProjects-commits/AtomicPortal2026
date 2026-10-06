@@ -1,15 +1,9 @@
 import { supabase } from "./supabase.js"
 
 const loginForm = document.getElementById('login-form');
-const signupForm = document.getElementById('signup-form');
 const loginPanel = document.getElementById('login-panel');
-const signupPanel = document.getElementById('signup-panel');
-const signupSuccessPanel = document.getElementById('signup-success-panel');
-const signupSuccessEmail = document.getElementById('signup-success-email');
-const showSignup = document.getElementById('show-signup');
 const showLogin = document.getElementById('show-login');
 const loginError = document.getElementById('login-error');
-const signupError = document.getElementById('signup-error');
 
 showSignup?.addEventListener("click", function(event) {
     event.preventDefault();
@@ -48,119 +42,84 @@ loginForm.addEventListener("submit", async function(event) {
     window.location.href = next || "index.html";
 })
 
-signupForm?.addEventListener("submit", async function(event) {
-    event.preventDefault();
-    signupError.hidden = true;
+// MOVE INTO ADMIN DASHBOARD
+// signupForm?.addEventListener("submit", async function(event) {
+//     event.preventDefault();
+//     signupError.hidden = true;
 
-    const firstName = document.getElementById("signup-first-name").value;
-    const lastName = document.getElementById("signup-last-name").value;
-    const email = document.getElementById("signup-email").value;
-    const password = document.getElementById("signup-password").value;
-    const confirmPassword = document.getElementById("signup-confirm-password").value;
-    const role = document.getElementById("signup-role").value;
+//     const email = document.getElementById("signup-email").value;
+//     const password = document.getElementById("signup-password").value;
+//     const confirmPassword = document.getElementById("signup-confirm-password").value;
+//     const role = document.getElementById("signup-role").value;
 
-    if (password !== confirmPassword) {
-        signupError.textContent = "Passwords do not match.";
-        signupError.hidden = false;
-        return;
+//     if (password !== confirmPassword) {
+//         signupError.textContent = "Passwords do not match.";
+//         signupError.hidden = false;
+//         return;
+//     }
+
+//     const { data, error } = await supabase.auth.signUp({
+//         email: email,
+//         password: password,
+//         options: {
+//             data: { role: role },
+//         },
+//     })
+//     if (error) {
+//         console.error(error);
+//         signupError.textContent = error.message;
+//         signupError.hidden = false;
+//         return;
+//     }
+// })
+
+// Returns the current user object, null if not authenticated.
+export async function getCurrentUser() {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if(!user || error) return null;
+    return user;
+}
+
+// Checks authentication, returns true if signed in, false otherwise.
+export async function isAuth() {
+    const user = await getCurrentUser();
+    return user != null;
+}
+
+// Checks authentication, redirects to home if not signed in.
+export async function requireAuth() {
+    const authenticated = await isAuth();
+    if(!authenticated) {
+        window.location.replace("/login.html");
     }
+    return;
+}
 
-    const { data, error } = await supabase.auth.signUp({
-        email: email,
-        password: password,
-        options: {
-            data: { first_name: firstName, last_name: lastName, role: role },
-        },
-    })
-    if (error) {
-        console.error(error);
-        signupError.textContent = error.message;
-        signupError.hidden = false;
-        return;
-    }
+// Checks authorisation, returns true if user is correct role, false otherwise.
+export async function requireRole(requiredRole) {
+    const user = await getCurrentUser();
+    if(!user) return false;
 
-    signupSuccessEmail.textContent = email;
-    signupPanel.hidden = true;
-    signupSuccessPanel.hidden = false;
-})
-/*import { supabase } from "./supabase.js"
+    const { data, error } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
 
-const loginForm = document.getElementById('login-form');
-const signupForm = document.getElementById('signup-form');
-const loginPanel = document.getElementById('login-panel');
-const signupPanel = document.getElementById('signup-panel');
-const signupSuccessPanel = document.getElementById('signup-success-panel');
-const signupSuccessEmail = document.getElementById('signup-success-email');
-const showSignup = document.getElementById('show-signup');
-const showLogin = document.getElementById('show-login');
-const loginError = document.getElementById('login-error');
-const signupError = document.getElementById('signup-error');
+    if(error || !data) return false;
 
-showSignup?.addEventListener("click", function(event) {
-    event.preventDefault();
-    loginPanel.hidden = true;
-    signupPanel.hidden = false;
-});
+    const role = data.role;
 
-showLogin?.addEventListener("click", function(event) {
-    event.preventDefault();
-    signupPanel.hidden = true;
-    loginPanel.hidden = false;
-});
+    return role === requiredRole;
+}
 
-loginForm.addEventListener("submit", async function(event) {
-    event.preventDefault();
-    loginError.hidden = true;
+// Signs out the current user, true if successful, false otherwise.
+export async function signOut() {
+    const { error } = await supabase.auth.signOut();
 
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
-    })
     if(error) {
         console.error(error);
-        loginError.textContent = error.message;
-        loginError.hidden = false;
-        return;
+        return false;
     }
-
-    window.location.href = "index.html";
-})
-
-signupForm?.addEventListener("submit", async function(event) {
-    event.preventDefault();
-    signupError.hidden = true;
-
-    const firstName = document.getElementById("signup-first-name").value;
-    const lastName = document.getElementById("signup-last-name").value;
-    const email = document.getElementById("signup-email").value;
-    const password = document.getElementById("signup-password").value;
-    const confirmPassword = document.getElementById("signup-confirm-password").value;
-    const role = document.getElementById("signup-role").value;
-
-    if (password !== confirmPassword) {
-        signupError.textContent = "Passwords do not match.";
-        signupError.hidden = false;
-        return;
-    }
-
-    const { data, error } = await supabase.auth.signUp({
-        email: email,
-        password: password,
-        options: {
-            data: { first_name: firstName, last_name: lastName, role: role },
-        },
-    })
-    if (error) {
-        console.error(error);
-        signupError.textContent = error.message;
-        signupError.hidden = false;
-        return;
-    }
-
-    signupSuccessEmail.textContent = email;
-    signupPanel.hidden = true;
-    signupSuccessPanel.hidden = false;
-})*/
+    return true;
+}
