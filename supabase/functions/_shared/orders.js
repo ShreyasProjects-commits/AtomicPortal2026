@@ -33,7 +33,7 @@ export function toContractContainer(row) {
 export async function loadOrderCatalog(supabase, orderId) {
   const { data: orderItems, error: itemsErr } = await supabase
     .from("order_items")
-    .select("quantity, items ( id, name, length_cm, width_cm, height_cm, weight_kg )")
+    .select("quantity, items ( id, name, length_cm, width_cm, height_cm, weight_kg, is_fragile, dangerous_goods_class )")
     .eq("order_id", orderId);
 
   if (itemsErr) throw itemsErr;
@@ -66,7 +66,7 @@ export async function loadOrderForOptimize(supabase, orderId) {
 
   const { data: orderItems, error: itemsErr } = await supabase
     .from("order_items")
-    .select("quantity, items ( id, name, length_cm, width_cm, height_cm, weight_kg )")
+    .select("quantity, items ( id, name, length_cm, width_cm, height_cm, weight_kg, is_fragile, dangerous_goods_class )")
     .eq("order_id", orderId);
 
   if (itemsErr) throw itemsErr;
