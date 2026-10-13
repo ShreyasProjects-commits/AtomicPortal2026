@@ -27,6 +27,8 @@ export function toOptimizePayload(orderId, itemRows, containerRows) {
       },
       weight: { value: Number(row.weight_kg), unit: "kg" },
       quantity: row.quantity,
+      isFragile: row.is_fragile ?? false,
+      dangerousGoodsClass: row.dangerous_goods_class ?? null,
     })),
     containers: containerRows.map((row) => ({
       id: row.id,
@@ -67,6 +69,10 @@ function toAtomicSolverRequest(payload) {
         Length: item.dimensions.length * CM_TO_MM,
         Depth: item.dimensions.height * CM_TO_MM,
         Weight: item.weight.value,
+        ...(item.isFragile ? { IsFragile: true } : {}),
+        ...(item.dangerousGoodsClass
+          ? { IsDangerousGoods: true, DangerousGoodsClass: String(item.dangerousGoodsClass) }
+          : {}),
       });
     }
   }
@@ -106,9 +112,10 @@ function fromAtomicSolverResponse(orderId, solverResult, itemCodeToId, boxVolume
   for (const p of solverResult.placements ?? []) {
     const key = `${p.boxReference}#${p.boxInstance}`;
     if (!boxes.has(key)) {
-      boxes.set(key, { containerId: p.boxReference, placements: [] });
+      boxes.set(key, { containerId: p.boxReference, boxInstance: p.boxInstance, placements: [] });
     }
-    boxes.get(key).placements.push({
+    const d = p.placedDimension;
+    const placement = {
       itemId: itemCodeToId.get(p.itemCode) ?? p.itemCode,
       position: {
         x: (p.position?.x ?? 0) / CM_TO_MM,
@@ -116,13 +123,22 @@ function fromAtomicSolverResponse(orderId, solverResult, itemCodeToId, boxVolume
         z: (p.position?.z ?? 0) / CM_TO_MM,
         unit: "cm",
       },
-      // atomic-solver only returns placedDimension (post-rotation size), not
-      // rotation degrees. TODO: confirm with FitSolver/FitVisualizer whether
-      // rotation can be derived, or needs adding to their response.
+      // atomic-solver returns no rotation angles. The item's orientation is
+      // carried by `size` below instead, so rotation stays 0.
       rotation: { x: 0, y: 0, z: 0 },
-    });
-
-    const d = p.placedDimension;
+    };
+    // Size of the item AS PLACED (after the solver turned it), in cm.
+    // Same axes as position: x = width, y = length, z = height (solver "depth").
+    // Draw with this, not the catalogue size, or rotated items stick out.
+    if (d) {
+      placement.size = {
+        width: Number(d.width) / CM_TO_MM,
+        length: Number(d.length) / CM_TO_MM,
+        height: Number(d.depth) / CM_TO_MM,
+        unit: "cm",
+      };
+    }
+    boxes.get(key).placements.push(placement);
     if (d) {
       const vol = Number(d.width) * Number(d.length) * Number(d.depth);
       placedVolumeByKey.set(key, (placedVolumeByKey.get(key) ?? 0) + vol);
@@ -139,11 +155,18 @@ function fromAtomicSolverResponse(orderId, solverResult, itemCodeToId, boxVolume
     return { ...box, utilisation };
   });
 
+  // The solver explains rejected items in violations[] (e.g. PROHIBITED_GOODS
+  // for dangerous goods class 1); unplacedItems itself is just item codes.
+  const violationByCode = new Map(
+    (solverResult.violations ?? []).map((v) => [v.itemCode, v]),
+  );
   const unpackedItems = (solverResult.unplacedItems ?? []).map((entry) => {
     const itemCode = typeof entry === "string" ? entry : entry.itemCode;
+    const v = violationByCode.get(itemCode);
     return {
       itemId: itemCodeToId.get(itemCode) ?? itemCode,
-      reason: (typeof entry === "object" && entry?.reason) || "no_container_fits",
+      reason: v?.code ?? (typeof entry === "object" && entry?.reason) ?? "no_container_fits",
+      ...(v?.message ? { message: v.message } : {}),
     };
   });
 
@@ -235,8 +258,13 @@ export async function markOrderFailed(supabase, orderId) {
     .update({ status: "failed", updated_at: new Date().toISOString() })
     .eq("id", orderId);
 }
-
-/*const FITSOLVER_URL = Deno.env.get("FITSOLVER_URL");
+/*// Falls back to the real solver URL directly, since this is a plain public
+// endpoint (no credential in it) and setting the FITSOLVER_URL secret needs
+// org owner/admin permissions on the Supabase project that not everyone on
+// the team has. The env var still wins if it's ever set, so this keeps
+// working the same way once someone with access adds the secret.
+const FITSOLVER_URL =
+  Deno.env.get("FITSOLVER_URL") ?? "https://atomic-solver.onrender.com/api/solve";
 
 // Confirmed via samples/packer_schemas.yaml (FitSolver's own published schema):
 // BoxType/Item Width/Length/Depth are millimetres. FitPortal stores/exchanges
@@ -275,12 +303,12 @@ export function toOptimizePayload(orderId, itemRows, containerRows) {
 }
 
 
-// atomic-solver speaks a different shape than api-contract.md:
-//  { boxTypes: [{Reference,Width,Length,Depth,MaxWeight,BoxWeight,Active,MaximumBoxes}],
-//   items:    [{ItemCode,ItemReference,Width,Length,Depth,Weight,BoxGroup?}] }
-//No `orderId`, and no `quantity` field on items — one entry per physical item.
-//This translates FitPortal's canonical payload into that shape. We set
-// Reference/ItemCode to our own ids (suffixed for repeated quantity) so the
+ //atomic-solver speaks a different shape than api-contract.md:
+ //  { boxTypes: [{Reference,Width,Length,Depth,MaxWeight,BoxWeight,Active,MaximumBoxes}],
+ //    items:    [{ItemCode,ItemReference,Width,Length,Depth,Weight,BoxGroup?}] }
+ // No `orderId`, and no `quantity` field on items — one entry per physical item.
+ //This translates FitPortal's canonical payload into that shape. We set
+ // Reference/ItemCode to our own ids (suffixed for repeated quantity) so the
  //response can be mapped straight back without a side lookup table.
  
 function toAtomicSolverRequest(payload) {
@@ -326,9 +354,8 @@ function toAtomicSolverRequest(payload) {
   return { request: { boxTypes, items }, itemCodeToId, boxVolumeByReference };
 }
 
-
- //Translates atomic-solver's response back into api-contract.md shape so the
- //rest of FitPortal (persistOptimizeResult, /order-result, FitVisualizer) never
+//Translates atomic-solver's response back into api-contract.md shape so the
+//rest of FitPortal (persistOptimizeResult, /order-result, FitVisualizer) never
  // has to know the solver's real field names.
  
 function fromAtomicSolverResponse(orderId, solverResult, itemCodeToId, boxVolumeByReference) {
@@ -382,7 +409,7 @@ function fromAtomicSolverResponse(orderId, solverResult, itemCodeToId, boxVolume
   return { orderId, packedContainers, unpackedItems };
 }
 
-// Call FitSolver or return a deterministic mock for local dev. 
+// Call FitSolver or return a deterministic mock for local dev.
 export async function runOptimize(payload) {
   if (FITSOLVER_URL) {
     const { request, itemCodeToId, boxVolumeByReference } = toAtomicSolverRequest(payload);
@@ -413,110 +440,6 @@ export async function runOptimize(payload) {
       itemCodeToId,
       boxVolumeByReference,
     );
-  }
-  return mockSolverResult(payload);
-}
-
-function mockSolverResult(payload) {
-  const firstContainer = payload.containers[0];
-  let z = 0;
-  const placements = [];
-  for (const item of payload.items) {
-    for (let q = 0; q < item.quantity; q++) {
-      placements.push({
-        itemId: item.id,
-        position: { x: 0, y: 0, z, unit: "cm" },
-        rotation: { x: 0, y: 0, z: 0 },
-      });
-      z += Number(item.dimensions.height) || 5;
-    }
-  }
-  return {
-    orderId: payload.orderId,
-    packedContainers: [
-      {
-        containerId: firstContainer?.id ?? "mock-cont",
-        placements,
-        utilisation: 0.42,
-      },
-    ],
-    unpackedItems: [],
-  };
-}
-
-export async function persistOptimizeResult(supabase, orderId, result) {
-  const { error: resultErr } = await supabase.from("order_results").upsert({
-    order_id: orderId,
-    packed_containers: result.packedContainers ?? [],
-    unpacked_items: result.unpackedItems ?? [],
-  });
-  if (resultErr) throw resultErr;
-
-  const { error: statusErr } = await supabase
-    .from("orders")
-    .update({ status: "solved", updated_at: new Date().toISOString() })
-    .eq("id", orderId);
-  if (statusErr) throw statusErr;
-
-  return result;
-}
-
-export async function markOrderFailed(supabase, orderId) {
-  await supabase
-    .from("orders")
-    .update({ status: "failed", updated_at: new Date().toISOString() })
-    .eq("id", orderId);
-}*/
-
-/*const FITSOLVER_URL = Deno.env.get("FITSOLVER_URL");
-
-// Build api-contract.md payload from DB rows.
-export function toOptimizePayload(orderId, itemRows, containerRows) {
-  return {
-    orderId,
-    items: itemRows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      dimensions: {
-        length: Number(row.length_cm),
-        width: Number(row.width_cm),
-        height: Number(row.height_cm),
-        unit: "cm",
-      },
-      weight: { value: Number(row.weight_kg), unit: "kg" },
-      quantity: row.quantity,
-    })),
-    containers: containerRows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      dimensions: {
-        length: Number(row.length_cm),
-        width: Number(row.width_cm),
-        height: Number(row.height_cm),
-        unit: "cm",
-      },
-      maxWeight: { value: Number(row.max_weight_kg), unit: "kg" },
-    })),
-  };
-}
-
-// Call FitSolver or return a deterministic mock for local dev.
-export async function runOptimize(payload) {
-  if (FITSOLVER_URL) {
-    let solverRes;
-    try {
-      solverRes = await fetch(FITSOLVER_URL, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-    } catch {
-      throw new Error("solver_unreachable");
-    }
-    if (!solverRes.ok) {
-      throw new Error("solver_error");
-    }
-    return await solverRes.json();
   }
   return mockSolverResult(payload);
 }
