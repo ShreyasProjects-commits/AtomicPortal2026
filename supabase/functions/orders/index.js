@@ -286,7 +286,7 @@ async function getOrderDetail(supabase, id) {
 
   const { data: orderItems } = await supabase
     .from("order_items")
-    .select("quantity, items ( id, name, length_cm, width_cm, height_cm, weight_kg )")
+    .select("quantity, items ( id, name, length_cm, width_cm, height_cm, weight_kg, is_fragile, dangerous_goods_class )")
     .eq("order_id", id);
 
   const { data: orderContainers } = await supabase

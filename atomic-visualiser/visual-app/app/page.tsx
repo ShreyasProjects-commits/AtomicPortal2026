@@ -24,6 +24,7 @@ export default function VisualizerPage() {
         itemId: string;
         position: { x: number; y: number; z: number; unit?: string };
         rotation?: { x: number; y: number; z: number };
+        size?: { length: number; width: number; height: number; unit?: string };
       }>;
     }>;
     unpackedItems?: Array<{ id: string; reason?: string }>;
@@ -65,9 +66,9 @@ export default function VisualizerPage() {
           boxReference: container?.name ?? container?.id ?? `Carton ${boxIndex + 1}`,
           itemCode: item.name ?? item.id,
           placedDimension: {
-            length: toMm(item.dimensions.length, item.dimensions.unit),
-            width: toMm(item.dimensions.width, item.dimensions.unit),
-            depth: toMm(item.dimensions.height, item.dimensions.unit),
+            length: toMm((placement.size ?? item.dimensions).length, (placement.size ?? item.dimensions).unit),
+            width: toMm((placement.size ?? item.dimensions).width, (placement.size ?? item.dimensions).unit),
+            depth: toMm((placement.size ?? item.dimensions).height, (placement.size ?? item.dimensions).unit),
           },
           position: {
             x: toMm(placement.position.x, placement.position.unit),
