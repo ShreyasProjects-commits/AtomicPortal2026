@@ -152,7 +152,7 @@ function renderBoxCard(box, itemById, containerById) {
       return `
       <div class="pack-item-row">
         <span>${esc(item?.name ?? "Unknown item")}${qty > 1 ? ` ×${qty}` : ""}</span>
-        <span class="id-tag">${esc(itemId)}</span>
+        <span class="id-tag">#${esc(String(itemId).slice(0, 8))}</span>
       </div>`;
     })
     .join("");
@@ -161,8 +161,11 @@ function renderBoxCard(box, itemById, containerById) {
 
   return `
     <div class="pack-box-card">
-      <h4>${esc(container?.name ?? "Box")}${pct != null ? ` — ${pct}% full` : ""}</h4>
-      <div class="id-tag">Box ID: ${esc(box.containerId)}</div>
+      <div class="pack-box-head">
+        <h4>${esc(container?.name ?? "Box")}</h4>
+        ${pct != null ? `<span class="util-label">${pct}% full</span>` : ""}
+      </div>
+      ${pct != null ? `<div class="util-bar"><div class="util-bar-fill" style="width:${pct}%"></div></div>` : ""}
       ${rows || `<p class="hint">Empty.</p>`}
     </div>`;
 }

@@ -134,8 +134,23 @@ async function getOrderDetail(supabase, id, profile) {
   });
 }
 
+async function nextOrderRef(supabase) {
+  const { data } = await supabase
+    .from("orders")
+    .select("external_ref")
+    .like("external_ref", "ORD-%");
+
+  let max = 1000;
+  for (const row of data ?? []) {
+    const n = Number(row.external_ref.slice(4));
+    if (Number.isInteger(n) && n > max) max = n;
+  }
+  return `ORD-${max + 1}`;
+}
+
 async function createOrder(body, supabase) {
-  const externalRef = typeof body.external_ref === "string" ? body.external_ref.trim() : null;
+  const providedRef = typeof body.external_ref === "string" ? body.external_ref.trim() : "";
+  const autoRef = !providedRef;
   const items = Array.isArray(body.items) ? body.items : [];
   const containers = Array.isArray(body.containers) ? body.containers : [];
 
@@ -156,17 +171,29 @@ async function createOrder(body, supabase) {
     }
   }
 
-  const { data: order, error: orderErr } = await supabase
-    .from("orders")
-    .insert({ external_ref: externalRef, status: "draft" })
-    .select("id, external_ref, status, created_at, updated_at")
-    .single();
+  let order = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const ref = autoRef ? await nextOrderRef(supabase) : providedRef;
+    const { data, error } = await supabase
+      .from("orders")
+      .insert({ external_ref: ref, status: "draft" })
+      .select("id, external_ref, status, created_at, updated_at")
+      .single();
 
-  if (orderErr) {
-    if (orderErr.code === "23505") {
-      return errorResponse("duplicate_ref", "An order with this reference already exists", 409);
+    if (!error) {
+      order = data;
+      break;
     }
-    return errorResponse("database_error", orderErr.message, 500);
+    if (error.code === "23505") {
+      if (!autoRef) {
+        return errorResponse("duplicate_ref", "An order with this reference already exists", 409);
+      }
+      continue; // auto-generated ref collided with a concurrent order, try the next number
+    }
+    return errorResponse("database_error", error.message, 500);
+  }
+  if (!order) {
+    return errorResponse("database_error", "Could not allocate an order reference, please try again", 500);
   }
 
   const { error: itemsErr } = await supabase.from("order_items").insert(

@@ -24,7 +24,6 @@
         <div class="detail-header">
           <div>
             <h2 id="viz-title">Loading…</h2>
-            <p class="hint">FitVisualizer renders inside this page. Configure <code>FITVISUALIZER_URL</code> in <code>src/config.js</code>.</p>
           </div>
           <a id="back-link" class="btn" href="orders.html">← Back to queue</a>
         </div>
@@ -36,12 +35,67 @@
         ></iframe>
         <p id="viz-error" class="banner error" hidden></p>
       </section>
+
+      <section class="panel" id="items-panel" hidden>
+        <h2>Items</h2>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Dimensions (cm)</th>
+                <th>Weight (kg)</th>
+                <th>Qty</th>
+              </tr>
+            </thead>
+            <tbody id="items-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel" id="containers-panel" hidden>
+        <h2>Containers</h2>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Dimensions (cm)</th>
+                <th>Max weight (kg)</th>
+              </tr>
+            </thead>
+            <tbody id="containers-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel" id="result-panel" hidden>
+        <h2>Packing result</h2>
+        <p id="unpacked-note" class="banner warn" hidden></p>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Container</th>
+                <th>Items packed</th>
+                <th>Utilisation</th>
+              </tr>
+            </thead>
+            <tbody id="result-summary-body"></tbody>
+          </table>
+        </div>
+        <details class="raw-json">
+          <summary>Raw result JSON</summary>
+          <pre id="result-json"></pre>
+        </details>
+      </section>
     </main>
 
     <script type="module" src="/src/nav.js"></script>
 
     <script type="module">
-      import { viewerUrl, FITVISUALIZER_URL, orderResultApiUrl, toVisualizerPayload } from "./src/config.js";
+      import { viewerUrl, FITVISUALIZER_URL, orderResultApiUrl, toVisualizerPayload, API_BASE } from "./src/config.js";
+      import { getAccessToken } from "./src/authz.js";
 
       const orderId = new URLSearchParams(location.search).get("id");
       const iframe = document.getElementById("viewer");
@@ -76,15 +130,95 @@
         console.log("visualize.html posted viz-data to iframe", targetOrigin);
       }
 
+      function esc(text) {
+        return String(text ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;");
+      }
+
+      function renderPackedRow(box, itemNameById, containerNameById) {
+        const counts = new Map();
+        for (const p of box.placements ?? []) {
+          const name = itemNameById.get(p.itemId) ?? p.itemId;
+          counts.set(name, (counts.get(name) ?? 0) + 1);
+        }
+        const itemsLabel =
+          [...counts.entries()]
+            .map(([name, n]) => (n > 1 ? `${esc(name)} ×${n}` : esc(name)))
+            .join(", ") || "—";
+        const containerLabel = containerNameById.get(box.containerId) ?? box.containerId;
+        const pct = box.utilisation != null ? Math.round(box.utilisation * 100) : null;
+        const utilCell =
+          pct != null
+            ? `<div class="util-bar"><div class="util-bar-fill" style="width:${pct}%"></div></div><span class="util-label">${pct}%</span>`
+            : `<span class="util-label">—</span>`;
+        return `<tr><td>${esc(containerLabel)}</td><td>${itemsLabel}</td><td>${utilCell}</td></tr>`;
+      }
+
+      async function loadDetails() {
+        const token = await getAccessToken();
+        const res = await fetch(`${API_BASE}/orders?id=${encodeURIComponent(orderId)}`, {
+          headers: token ? { authorization: `Bearer ${token}` } : {},
+        });
+        const order = await res.json();
+        if (!res.ok) throw new Error(order.message ?? order.error ?? `HTTP ${res.status}`);
+        title.textContent = `Order ${order.external_ref ?? orderId.slice(0, 8)}`;
+
+        document.getElementById("items-body").innerHTML =
+          (order.items ?? [])
+            .map(
+              (i) =>
+                `<tr><td>${esc(i.name)}</td><td>${i.length_cm} × ${i.width_cm} × ${i.height_cm}</td><td>${i.weight_kg}</td><td>${i.quantity ?? 1}</td></tr>`,
+            )
+            .join("") || `<tr><td colspan="4" class="muted-cell">No items</td></tr>`;
+
+        document.getElementById("containers-body").innerHTML =
+          (order.containers ?? [])
+            .map(
+              (c) =>
+                `<tr><td>${esc(c.name)}</td><td>${c.length_cm} × ${c.width_cm} × ${c.height_cm}</td><td>${c.max_weight_kg}</td></tr>`,
+            )
+            .join("") || `<tr><td colspan="3" class="muted-cell">No containers</td></tr>`;
+
+        document.getElementById("items-panel").hidden = false;
+        document.getElementById("containers-panel").hidden = false;
+
+        if (order.result) {
+          const itemNameById = new Map((order.items ?? []).map((i) => [i.id, i.name]));
+          const containerNameById = new Map((order.containers ?? []).map((c) => [c.id, c.name]));
+          const packed = order.result.packed_containers ?? [];
+
+          document.getElementById("result-summary-body").innerHTML =
+            packed.map((box) => renderPackedRow(box, itemNameById, containerNameById)).join("") ||
+            `<tr><td colspan="3" class="muted-cell">No containers used</td></tr>`;
+          document.getElementById("result-json").textContent = JSON.stringify(order.result, null, 2);
+
+          const unpacked = order.result.unpacked_items ?? [];
+          const unpackedNote = document.getElementById("unpacked-note");
+          unpackedNote.hidden = !unpacked.length;
+          if (unpacked.length) {
+            const names = unpacked.map((u) => itemNameById.get(u.itemId) ?? u.itemId).join(", ");
+            unpackedNote.textContent = `${unpacked.length} item(s) could not be packed: ${names}`;
+          }
+          document.getElementById("result-panel").hidden = false;
+        }
+      }
+
       if (!orderId) {
         title.textContent = "Missing order";
         errEl.hidden = false;
         errEl.textContent = "No order id in URL. Open from the order queue.";
       } else {
         title.textContent = `Order ${orderId.slice(0, 8)}…`;
-        back.href = `order.html?id=${encodeURIComponent(orderId)}`;
         iframe.src = viewerUrl(orderId);
         iframe.hidden = false;
+
+        loadDetails().catch((error) => {
+          errEl.hidden = false;
+          errEl.textContent = `Could not load order details: ${error.message}`;
+          console.error(error);
+        });
 
         iframe.addEventListener("load", () => {
           sendLiveResult().catch((error) => {

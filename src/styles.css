@@ -502,6 +502,14 @@ footer {
   padding: 0.9rem 1rem;
 }
 .pack-box-card h4 { margin: 0 0 0.15rem; }
+.pack-box-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.pack-box-card .util-bar { margin: 0.5rem 0; }
+#viz-panel .banner { margin: 0.75rem 0; }
 .pack-box-card .id-tag { font-family: monospace; font-size: 0.75rem; color: var(--muted); word-break: break-all; }
 .pack-item-row {
   display: flex;
