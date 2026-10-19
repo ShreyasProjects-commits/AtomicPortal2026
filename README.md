@@ -26,6 +26,55 @@ open an order and click **View in 3D**.
 Configure URLs in `src/config.js` or via `window.FITPORTAL_API_BASE` /
 `window.FITVISUALIZER_URL` script tags.
 
+## Running the tests
+
+Automated backend tests live in `tests/`. They need **Node 22 or newer** and nothing
+else (no install step, no Supabase, no network):
+
+```bash
+npm test
+```
+
+They also run automatically on GitHub for every push and pull request
+(`.github/workflows/tests.yml`) — check the **Actions** tab for the result.
+
+**What is covered**
+
+| File | Covers |
+|---|---|
+| `tests/csv.test.mjs` | CSV parsing/validation and the sample import files |
+| `tests/solver.test.mjs` | Translation to/from the solver (units, quantities, placements, utilisation, failures) and saving results |
+| `tests/config.test.mjs` | Frontend URL/format helpers and the 3D axis conversion |
+| `tests/shared.test.mjs` | CORS, UUID check, server-side auth (`requireRole`) and shared order loaders |
+| `tests/orders.test.mjs` | `/orders`: list, detail, manual create (incl. auto `ORD-` references), complete |
+| `tests/optimize.test.mjs` | `/optimize`: access rules, re-run from DB, payload mode, solver failures |
+| `tests/import-csv.test.mjs` | `/import-csv`: uploads, duplicates, `?replace=true`, per-order failures |
+| `tests/assign-worker.test.mjs` | `/assign-worker`: assign, auto-assign, roles, enable/disable |
+| `tests/worker-stats.test.mjs` | `/worker-stats`: worker and admin statistics |
+| `tests/catalog.test.mjs` | `/catalog` |
+| `tests/order-result.test.mjs` | `/order-result` |
+
+**How they work.** The tests run the real Edge Function code. Only the database and the
+solver's network call are replaced with in-memory fakes (`tests/helpers/`), so the tests
+are fast, repeatable and never touch real data.
+
+**Not covered:** the real Supabase project (database constraints, RLS policies), the real
+solver and the browser UI — those need a test project/accounts or a browser test tool.
+
+**Known issues (marked `todo`).** Tests flagged `todo` describe correct behaviour that the
+code does not have yet. They are reported in the output but don't fail the run, and will
+start passing once fixed:
+
+- an inactive worker can still be assigned an order manually
+- a blank CSV dimension is accepted as `0`
+- an unplaced item with no solver reason gets `reason: false` instead of `"no_container_fits"`
+- a duplicate order later in a CSV import returns 409 after earlier orders were already created
+- errors saving an imported order's items/containers are ignored
+- `/order-result` has no authentication
+- creating an order with an unknown item/container id returns 500 instead of a client error
+- a database failure while loading a profile is reported as a 403 permissions error
+- "days worked" uses UTC dates rather than the local calendar day
+
 ## Docs
 
 | Doc | Purpose |
