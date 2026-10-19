@@ -1,6 +1,6 @@
 import { test, describe, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { loadHandler, newDb, call, uuid, envVars } from "./helpers/harness.mjs";
+import { loadHandler, newDb, call, uuid, envVars, ADMIN_ID, WORKER_ID, WORKER2_ID } from "./helpers/harness.mjs";
 
 const handler = await loadHandler("order-result");
 
@@ -11,7 +11,12 @@ const CONTAINER_ID = uuid(301);
 let db;
 beforeEach(() => {
   db = newDb();
-  db.seed("orders", [{ id: ORDER_ID, external_ref: "ORD-1050", status: "solved" }]);
+  db.addUser("admin-token", { id: ADMIN_ID, role: "admin" });
+  db.addUser("worker-token", { id: WORKER_ID });
+  db.addUser("worker2-token", { id: WORKER2_ID });
+  db.seed("orders", [
+    { id: ORDER_ID, external_ref: "ORD-1050", status: "solved", assigned_worker_id: WORKER_ID },
+  ]);
   db.seed("order_items", [
     {
       order_id: ORDER_ID,
@@ -38,11 +43,11 @@ const seedResult = (extra = {}) =>
     },
   ]);
 
-const get = (query = "") =>
-  call(handler, { method: "GET", url: `http://localhost/order-result${query}` });
+const get = (query = "", token = "admin-token") =>
+  call(handler, { method: "GET", token, url: `http://localhost/order-result${query}` });
 
-describe("order-result: request validation", () => {
-  test("OPTIONS works", async () => {
+describe("order-result: access", () => {
+  test("OPTIONS works without a token", async () => {
     assert.equal((await call(handler, { method: "OPTIONS" })).status, 200);
   });
 
@@ -50,6 +55,51 @@ describe("order-result: request validation", () => {
     assert.equal((await call(handler, { method: "POST", body: {} })).status, 405);
   });
 
+  test("requires a signed-in user: no token -> 401", async () => {
+    seedResult();
+    const res = await get(`?id=${ORDER_ID}`, null);
+    assert.equal(res.status, 401);
+    assert.equal((await res.json()).error, "unauthorized");
+  });
+
+  test("an invalid token -> 401", async () => {
+    seedResult();
+    assert.equal((await get(`?id=${ORDER_ID}`, "nonsense")).status, 401);
+  });
+
+  test("a disabled account -> 403 account_disabled", async () => {
+    seedResult();
+    db.tables.profiles.find((p) => p.id === WORKER_ID).active = false;
+    const res = await get(`?id=${ORDER_ID}`, "worker-token");
+    assert.equal(res.status, 403);
+    assert.equal((await res.json()).error, "account_disabled");
+  });
+
+  test("an admin can read any order", async () => {
+    seedResult();
+    assert.equal((await get(`?id=${ORDER_ID}`, "admin-token")).status, 200);
+  });
+
+  test("a worker can read an order assigned to them", async () => {
+    seedResult();
+    assert.equal((await get(`?id=${ORDER_ID}`, "worker-token")).status, 200);
+  });
+
+  test("a worker gets 404 (not 403) for an order assigned to someone else", async () => {
+    seedResult();
+    const res = await get(`?id=${ORDER_ID}`, "worker2-token");
+    assert.equal(res.status, 404);
+    assert.equal((await res.json()).message, "Order not found");
+  });
+
+  test("a worker gets 404 for an unassigned order", async () => {
+    seedResult();
+    db.tables.orders[0].assigned_worker_id = null;
+    assert.equal((await get(`?id=${ORDER_ID}`, "worker-token")).status, 404);
+  });
+});
+
+describe("order-result: request validation", () => {
   test("a missing id -> 400", async () => {
     const res = await get();
     assert.equal(res.status, 400);
@@ -112,20 +162,6 @@ describe("order-result: response", () => {
     const res = await get(`?id=${ORDER_ID}`);
     assert.equal(res.headers.get("access-control-allow-origin"), "*");
   });
-
-  test("works without any login token (the visualiser calls it directly)", async () => {
-    seedResult();
-    assert.equal((await get(`?id=${ORDER_ID}`)).status, 200);
-  });
-
-  test(
-    "requires a signed-in user",
-    { todo: "RISK: anyone who knows an order's UUID can read its contents; there is no auth on this endpoint" },
-    async () => {
-      seedResult();
-      assert.equal((await get(`?id=${ORDER_ID}`)).status, 401);
-    },
-  );
 });
 
 describe("order-result: failures", () => {

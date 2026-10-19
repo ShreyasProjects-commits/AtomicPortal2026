@@ -130,12 +130,14 @@ function render(order) {
   vizPanel.hidden = false;
   const iframe = document.getElementById("viewer");
   iframe.src = viewerUrl(order.id);
-  iframe.addEventListener("load", () => {
-    sendResultToVisualizerFrame(iframe, order.id).catch((err) => {
+  iframe.addEventListener("load", async () => {
+    try {
+      await sendResultToVisualizerFrame(iframe, order.id, await authHeaders());
+    } catch (err) {
       vizError.hidden = false;
       vizError.textContent = "Couldn't load the 3D view — try refreshing.";
       console.error(err);
-    });
+    }
   });
 }
 

@@ -41,7 +41,10 @@ export async function requireRole(req, allowedRoles) {
     .eq("id", user.id)
     .maybeSingle();
 
-  if (profileErr || !profile) {
+  if (profileErr) {
+    return { error: "database_error", message: "Could not load your profile", status: 500 };
+  }
+  if (!profile) {
     return { error: "no_profile", message: "No profile row for this user", status: 403 };
   }
   if (profile.active === false) {

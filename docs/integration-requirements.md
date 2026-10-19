@@ -35,7 +35,7 @@ FitVisualizer does **not** need direct Postgres access if they use `/order-resul
 - [ ] Confirm they accept `orderId` query param
 - [ ] Confirm they will call `/order-result` (or prefer Supabase direct read + RLS)
 - [ ] iframe embedding allowed? (CORS / X-Frame-Options)
-- [ ] Auth header required on `/order-result` in production?
+- [x] Auth header required on `/order-result` in production: **yes**, `Authorization: Bearer <Supabase access token>`. FitPortal fetches the result with the signed-in user's token and passes it to FitVisualizer with `postMessage`, so the visualiser does not need to call the endpoint itself.
 
 ## Information needed from FitSolver
 

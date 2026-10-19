@@ -177,15 +177,12 @@ describe("requireRole (server-side auth)", () => {
     }
   });
 
-  test(
-    "a database failure while loading the profile is a server error, not a permissions error",
-    { todo: "RISK: a failed profile lookup is reported as 403 no_profile, hiding a real outage" },
-    async () => {
-      db.fail("profiles", "select", { message: "connection lost" });
-      const r = await requireRole(reqWith("Bearer admin-token"), ["admin"]);
-      assert.equal(r.status, 500);
-    },
-  );
+  test("a database failure while loading the profile is a 500, not a permissions error", async () => {
+    db.fail("profiles", "select", { message: "connection lost" });
+    const r = await requireRole(reqWith("Bearer admin-token"), ["admin"]);
+    assert.equal(r.status, 500);
+    assert.equal(r.error, "database_error");
+  });
 });
 
 describe("_shared/orders.js", () => {

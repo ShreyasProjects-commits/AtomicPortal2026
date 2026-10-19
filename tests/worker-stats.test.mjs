@@ -41,9 +41,9 @@ describe("worker-stats: access", () => {
 describe("worker-stats: a user's own stats", () => {
   test("counts assigned, open, completed and failed orders and distinct days worked", async () => {
     db.seed("orders", [
-      order({ assigned_worker_id: WORKER_ID, completed_at: "2026-10-16T01:00:00.000Z" }),
-      order({ assigned_worker_id: WORKER_ID, completed_at: "2026-10-16T22:00:00.000Z" }), // same UTC day
-      order({ assigned_worker_id: WORKER_ID, completed_at: "2026-10-17T05:00:00.000Z" }),
+      order({ assigned_worker_id: WORKER_ID, completed_at: "2026-10-16T01:00:00.000Z" }), // 16th, midday Sydney
+      order({ assigned_worker_id: WORKER_ID, completed_at: "2026-10-16T05:00:00.000Z" }), // same Sydney day
+      order({ assigned_worker_id: WORKER_ID, completed_at: "2026-10-17T05:00:00.000Z" }), // 17th
       order({ assigned_worker_id: WORKER_ID, status: "draft" }),
       order({ assigned_worker_id: WORKER_ID, status: "failed" }),
       order({ assigned_worker_id: WORKER2_ID, completed_at: "2026-10-18T05:00:00.000Z" }), // not Bob's
@@ -94,15 +94,36 @@ describe("worker-stats: a user's own stats", () => {
     assert.equal((await res.json()).error, "database_error");
   });
 
-  test(
-    "days worked follow the local calendar day, not UTC",
-    { todo: "DESIGN: days are UTC dates, so 7am on 17 Oct in Sydney (21:00Z on the 16th) counts as the 16th" },
-    async () => {
-      db.seed("orders", [order({ assigned_worker_id: WORKER_ID, completed_at: "2026-10-16T21:00:00.000Z" })]);
-      const body = await (await get("worker-token")).json();
-      assert.deepEqual(body.days_worked_dates, ["2026-10-17"]);
-    },
-  );
+  test("days worked follow the Sydney calendar day, not UTC", async () => {
+    db.seed("orders", [
+      // 21:00Z on the 16th is 08:00 on the 17th in Sydney (daylight saving)
+      order({ assigned_worker_id: WORKER_ID, completed_at: "2026-10-16T21:00:00.000Z" }),
+      // 12:00Z on the 17th is 23:00 on the 17th in Sydney: same day as the order above
+      order({ assigned_worker_id: WORKER_ID, completed_at: "2026-10-17T12:00:00.000Z" }),
+    ]);
+    const body = await (await get("worker-token")).json();
+    assert.equal(body.days_worked, 1);
+    assert.deepEqual(body.days_worked_dates, ["2026-10-17"]);
+  });
+
+  test("just after midnight Sydney time counts as the next day", async () => {
+    db.seed("orders", [
+      // 12:30Z on the 17th is 23:30 Sydney; 13:30Z is 00:30 on the 18th
+      order({ assigned_worker_id: WORKER_ID, completed_at: "2026-10-17T12:30:00.000Z" }),
+      order({ assigned_worker_id: WORKER_ID, completed_at: "2026-10-17T13:30:00.000Z" }),
+    ]);
+    const body = await (await get("worker-token")).json();
+    assert.deepEqual(body.days_worked_dates, ["2026-10-17", "2026-10-18"]);
+  });
+
+  test("the admin summary uses the same local-day rule", async () => {
+    db.seed("orders", [
+      order({ assigned_worker_id: WORKER_ID, completed_at: "2026-10-16T21:00:00.000Z" }),
+      order({ assigned_worker_id: WORKER_ID, completed_at: "2026-10-17T12:00:00.000Z" }),
+    ]);
+    const { workers } = await (await get("admin-token", "?scope=admin")).json();
+    assert.equal(workers.find((w) => w.id === WORKER_ID).days_worked, 1);
+  });
 });
 
 describe("worker-stats: ?scope=admin", () => {

@@ -14,6 +14,18 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { handleCors, json, errorResponse } from "../_shared/cors.js";
 import { requireRole } from "../_shared/authz.js";
 
+// "Days worked" are calendar days in the warehouse's timezone, not UTC, so a
+// morning finish in Sydney isn't counted as the previous day. Override with the
+// STATS_TIMEZONE secret.
+const STATS_TIMEZONE = Deno.env.get("STATS_TIMEZONE") ?? "Australia/Sydney";
+const dayFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: STATS_TIMEZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+const dayKey = (iso) => dayFormatter.format(new Date(iso));
+
 serve(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
@@ -52,7 +64,7 @@ async function workerStats(supabase, workerId) {
   const rows = assigned ?? [];
   const completed = rows.filter((o) => o.completed_at);
   const daysWorked = new Set(
-    completed.map((o) => new Date(o.completed_at).toISOString().slice(0, 10)),
+    completed.map((o) => dayKey(o.completed_at)),
   );
 
   return {
@@ -95,7 +107,7 @@ async function adminStats(supabase) {
       const own = allOrders.filter((o) => o.assigned_worker_id === w.id);
       const completed = own.filter((o) => o.completed_at);
       const daysWorked = new Set(
-        completed.map((o) => new Date(o.completed_at).toISOString().slice(0, 10)),
+        completed.map((o) => dayKey(o.completed_at)),
       );
       return {
         id: w.id,

@@ -181,15 +181,21 @@ describe("import-csv: duplicates and replace", () => {
     assert.equal(res.status, 409);
   });
 
-  test(
-    "a duplicate later in the file doesn't leave earlier orders half-imported",
-    { todo: "RISK: the 409 is returned after earlier orders in the same file were already created" },
-    async () => {
-      const res = await upload(csv("ORD-9002", "ORD-9001"));
-      assert.equal(res.status, 409);
-      assert.equal(byRef("ORD-9002"), undefined);
-    },
-  );
+  test("a duplicate later in the file doesn't leave earlier orders half-imported", async () => {
+    const res = await upload(csv("ORD-9002", "ORD-9001"));
+    assert.equal(res.status, 409);
+    assert.equal(byRef("ORD-9002"), undefined);
+    assert.equal(orders().length, 1, "only the original order exists");
+    assert.equal(fetchCalls.length, 0, "the solver was never called");
+  });
+
+  test("with ?replace=true every order in the file is re-imported", async () => {
+    db.seed("orders", [{ id: uuid(501), external_ref: "ORD-9002", status: "solved" }]);
+    const res = await upload(csv("ORD-9001", "ORD-9002"), { query: "?replace=true" });
+    assert.equal(res.status, 200);
+    assert.equal(orders().some((o) => o.id === uuid(500) || o.id === uuid(501)), false);
+    assert.equal(orders().length, 2);
+  });
 });
 
 describe("import-csv: solver problems", () => {
@@ -231,13 +237,29 @@ describe("import-csv: database problems", () => {
     assert.equal(imported[0].error, "disk full");
   });
 
-  test(
-    "a failure saving an order's items is reported instead of ignored",
-    { todo: "RISK: errors from the order_items / order_containers inserts are ignored" },
-    async () => {
-      db.fail("order_items", "insert", { message: "bad item" });
-      const { imported } = await (await upload(csv("ORD-9001"))).json();
-      assert.equal(imported[0].status, "failed");
-    },
-  );
+  test("a failure saving an order's items is reported and the order is cleaned up", async () => {
+    db.fail("order_items", "insert", { message: "bad item" });
+    const { imported } = await (await upload(csv("ORD-9001"))).json();
+    assert.equal(imported[0].status, "failed");
+    assert.equal(imported[0].error, "bad item");
+    assert.equal(byRef("ORD-9001"), undefined, "no empty order left behind");
+    assert.equal(fetchCalls.length, 0, "the solver was never called");
+  });
+
+  test("a failure saving an order's containers is reported and the order is cleaned up", async () => {
+    db.fail("order_containers", "insert", { message: "bad container" });
+    const { imported } = await (await upload(csv("ORD-9001"))).json();
+    assert.equal(imported[0].status, "failed");
+    assert.equal(imported[0].error, "bad container");
+    assert.equal(byRef("ORD-9001"), undefined);
+  });
+
+  test("a failure in one order doesn't stop the next one importing", async () => {
+    db.fail("order_items", "insert", { message: "bad item" }, 1);
+    const { imported } = await (await upload(csv("ORD-9001", "ORD-9002"))).json();
+    assert.deepEqual(
+      imported.map((i) => i.status),
+      ["failed", "solved"],
+    );
+  });
 });

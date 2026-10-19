@@ -1,4 +1,4 @@
-/** Minimal RFC-4180-ish CSV parser (no quoted-field escapes). */
+/** Minimal CSV parser: quoted fields may contain commas ("" escapes a quote); no multi-line fields. */
 export function parseCsv(text) {
   const lines = text.trim().split(/\r?\n/).filter(Boolean);
   if (lines.length < 2) {
@@ -17,7 +17,31 @@ export function parseCsv(text) {
 }
 
 function splitCsvLine(line) {
-  return line.split(",").map((v) => v.trim());
+  const values = [];
+  let current = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"' && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else if (ch === '"') {
+        inQuotes = false;
+      } else {
+        current += ch;
+      }
+    } else if (ch === '"' && current.trim() === "") {
+      inQuotes = true;
+    } else if (ch === ",") {
+      values.push(current.trim());
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  values.push(current.trim());
+  return values;
 }
 
 /** Group CSV rows into orders keyed by order_ref. */
@@ -64,7 +88,7 @@ export function groupCsvOrders(rows) {
 }
 
 function num(value, field, line) {
-  const n = Number(value);
+  const n = value === "" || value == null ? NaN : Number(value);
   if (!Number.isFinite(n)) {
     throw new Error(`invalid ${field} on line ${line}`);
   }

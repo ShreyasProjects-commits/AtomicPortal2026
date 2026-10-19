@@ -29,11 +29,12 @@ export function orderResultApiUrl(orderId) {
  * without duplicating the postMessage plumbing. Call this from the
  * iframe's "load" event, not before.
  */
-export async function sendResultToVisualizerFrame(iframe, orderId) {
+export async function sendResultToVisualizerFrame(iframe, orderId, headers = {}) {
   if (!iframe?.contentWindow) return;
   const targetOrigin = new URL(FITVISUALIZER_URL).origin;
 
-  const res = await fetch(orderResultApiUrl(orderId));
+  // /order-result needs the signed-in user's token: pass { authorization: "Bearer ..." }.
+  const res = await fetch(orderResultApiUrl(orderId), { headers });
   if (!res.ok) throw new Error(`order-result request failed: ${res.status}`);
   const result = await res.json();
 

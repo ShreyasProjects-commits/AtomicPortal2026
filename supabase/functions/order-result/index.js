@@ -1,9 +1,12 @@
 // GET /order-result?id=<uuid>
 // Returns packing result in api-contract.md shape — intended for FitVisualizer.
+// Requires a signed-in user (Authorization: Bearer <access token>). Admins can read
+// any order; a warehouse worker can only read orders assigned to them.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { handleCors, json, errorResponse } from "../_shared/cors.js";
-import { getServiceClient, UUID_RE } from "../_shared/supabase.js";
+import { UUID_RE } from "../_shared/supabase.js";
+import { requireRole } from "../_shared/authz.js";
 import { loadOrderCatalog, toApiContractResult } from "../_shared/orders.js";
 
 serve(async (req) => {
@@ -14,21 +17,18 @@ serve(async (req) => {
     return errorResponse("method_not_allowed", "GET only", 405);
   }
 
+  const auth = await requireRole(req, null);
+  if (auth.error) return errorResponse(auth.error, auth.message, auth.status);
+  const { profile, supabase } = auth;
+
   const id = new URL(req.url).searchParams.get("id");
   if (!id || !UUID_RE.test(id)) {
     return errorResponse("invalid_request", "Query param id must be a UUID");
   }
 
-  let supabase;
-  try {
-    supabase = getServiceClient();
-  } catch {
-    return errorResponse("supabase_not_configured", "Set SUPABASE_URL and service role key", 500);
-  }
-
   const { data: order, error: orderErr } = await supabase
     .from("orders")
-    .select("id, status, external_ref")
+    .select("id, status, external_ref, assigned_worker_id")
     .eq("id", id)
     .maybeSingle();
 
@@ -36,6 +36,10 @@ serve(async (req) => {
     return errorResponse("database_error", orderErr.message, 500);
   }
   if (!order) {
+    return errorResponse("not_found", "Order not found", 404);
+  }
+  if (profile.role !== "admin" && order.assigned_worker_id !== profile.id) {
+    // Don't leak that the order exists to a worker it isn't assigned to.
     return errorResponse("not_found", "Order not found", 404);
   }
 

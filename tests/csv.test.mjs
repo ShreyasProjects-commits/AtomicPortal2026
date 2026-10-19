@@ -113,16 +113,87 @@ describe("groupCsvOrders", () => {
     );
   });
 
-  test(
-    "rejects a blank dimension instead of treating it as 0",
-    { todo: "BUG: Number('') is 0, so a blank length/width/height/weight passes as 0" },
-    () => {
-      assert.throws(
-        () => groupCsvOrders(parseCsv(`${HEADER}\nitem,ORD-1,Gadget,,5,5,1,1,,\n`)),
-        /invalid length_cm on line 2/,
-      );
-    },
-  );
+  test("rejects a blank dimension or weight instead of treating it as 0", () => {
+    const cases = [
+      ["item,ORD-1,Gadget,,5,5,1,1,,", /invalid length_cm on line 2/],
+      ["item,ORD-1,Gadget,5,,5,1,1,,", /invalid width_cm on line 2/],
+      ["item,ORD-1,Gadget,5,5,,1,1,,", /invalid height_cm on line 2/],
+      ["item,ORD-1,Gadget,5,5,5,,1,,", /invalid weight_kg on line 2/],
+      ["container,ORD-1,,5,5,5,,,Box,", /invalid max_weight_kg on line 2/],
+    ];
+    for (const [row, expected] of cases) {
+      assert.throws(() => groupCsvOrders(parseCsv(`${HEADER}\n${row}`)), expected, row);
+    }
+  });
+
+  test("a genuine zero is still accepted", () => {
+    const [order] = groupCsvOrders(parseCsv(`${HEADER}\nitem,ORD-1,Gadget,5,5,5,0,1,,\n`));
+    assert.equal(order.items[0].weight_kg, 0);
+  });
+});
+
+describe("CSV format edge cases", () => {
+  test("columns can be in any order (they are matched by header name)", () => {
+    const header = "order_ref,record_type,container_name,max_weight_kg,length_cm,width_cm,height_cm";
+    const [order] = groupCsvOrders(parseCsv(`${header}\nORD-1,container,Box,30,60,40,40\n`));
+    assert.deepEqual(order.containers[0], {
+      name: "Box",
+      length_cm: 60,
+      width_cm: 40,
+      height_cm: 40,
+      max_weight_kg: 30,
+    });
+  });
+
+  test("extra, unknown columns are ignored", () => {
+    const [order] = groupCsvOrders(
+      parseCsv(`${HEADER},notes\nitem,ORD-1,Widget,1,2,3,4,5,,,fragile!\n`),
+    );
+    assert.equal(order.items[0].name, "Widget");
+  });
+
+  test("blank lines between rows are ignored", () => {
+    const orders = groupCsvOrders(
+      parseCsv(`${HEADER}\n\nitem,ORD-1,Widget,1,2,3,4,5,,\n\n\ncontainer,ORD-1,,9,9,9,,,Box,10\n`),
+    );
+    assert.equal(orders[0].items.length, 1);
+    assert.equal(orders[0].containers.length, 1);
+  });
+
+  test("a UTF-8 byte-order mark at the start of the file (added by Excel) is ignored", () => {
+    const [order] = groupCsvOrders(parseCsv(`﻿${HEADER}\nitem,ORD-1,Widget,1,2,3,4,5,,\n`));
+    assert.equal(order.items[0].name, "Widget");
+  });
+
+  test("header names are case-sensitive", () => {
+    const text = `${HEADER.replace("record_type", "Record_Type")}\nitem,ORD-1,Widget,1,2,3,4,5,,\n`;
+    assert.throws(() => groupCsvOrders(parseCsv(text)), /invalid record_type on line 2/);
+  });
+
+  test("quoted fields can contain commas", () => {
+    const [order] = groupCsvOrders(
+      parseCsv(`${HEADER}\nitem,ORD-1,"Mouse, wireless",12,7,4,0.15,2,,\n`),
+    );
+    assert.equal(order.items[0].name, "Mouse, wireless");
+    assert.equal(order.items[0].length_cm, 12);
+  });
+
+  test('a doubled quote inside a quoted field is a literal quote ("")', () => {
+    const [order] = groupCsvOrders(
+      parseCsv(`${HEADER}\nitem,ORD-1,"The ""Big"" Box",12,7,4,0.15,2,,\n`),
+    );
+    assert.equal(order.items[0].name, 'The "Big" Box');
+  });
+
+  test("a stray quote inside an unquoted field is kept as text", () => {
+    const [order] = groupCsvOrders(parseCsv(`${HEADER}\nitem,ORD-1,5" pipe,12,7,4,0.15,2,,\n`));
+    assert.equal(order.items[0].name, '5" pipe');
+  });
+
+  test("quoted fields are still trimmed of surrounding spaces outside the quotes", () => {
+    const [order] = groupCsvOrders(parseCsv(`${HEADER}\nitem,ORD-1, "Widget" ,1,2,3,4,5,,\n`));
+    assert.equal(order.items[0].name, "Widget");
+  });
 });
 
 describe("sample CSV files", () => {

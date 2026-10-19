@@ -201,6 +201,9 @@ async function createOrder(body, supabase) {
   );
   if (itemsErr) {
     await supabase.from("orders").delete().eq("id", order.id);
+    if (itemsErr.code === "23503") {
+      return errorResponse("invalid_request", "One or more items do not exist", 400);
+    }
     return errorResponse("database_error", `Failed to attach items: ${itemsErr.message}`, 500);
   }
 
@@ -209,6 +212,9 @@ async function createOrder(body, supabase) {
   );
   if (containersErr) {
     await supabase.from("orders").delete().eq("id", order.id);
+    if (containersErr.code === "23503") {
+      return errorResponse("invalid_request", "One or more containers do not exist", 400);
+    }
     return errorResponse("database_error", `Failed to attach containers: ${containersErr.message}`, 500);
   }
 

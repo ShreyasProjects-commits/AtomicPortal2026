@@ -12,6 +12,10 @@ const FITSOLVER_URL =
 // and back.
 const CM_TO_MM = 10;
 
+// Rounded to 0.01 mm so decimal centimetres don't become values like
+// 5.699999999999999 (0.57 * 10) in the request.
+const toMm = (cm) => Math.round(Number(cm) * CM_TO_MM * 100) / 100;
+
 /** Build api-contract.md payload from DB rows. */
 export function toOptimizePayload(orderId, itemRows, containerRows) {
   return {
@@ -65,9 +69,9 @@ function toAtomicSolverRequest(payload) {
       items.push({
         ItemCode: itemCode,
         ItemReference: item.name,
-        Width: item.dimensions.width * CM_TO_MM,
-        Length: item.dimensions.length * CM_TO_MM,
-        Depth: item.dimensions.height * CM_TO_MM,
+        Width: toMm(item.dimensions.width),
+        Length: toMm(item.dimensions.length),
+        Depth: toMm(item.dimensions.height),
         Weight: item.weight.value,
         ...(item.isFragile ? { IsFragile: true } : {}),
         ...(item.dangerousGoodsClass
@@ -79,9 +83,9 @@ function toAtomicSolverRequest(payload) {
 
   const boxVolumeByReference = new Map();
   const boxTypes = payload.containers.map((c) => {
-    const width = c.dimensions.width * CM_TO_MM;
-    const length = c.dimensions.length * CM_TO_MM;
-    const depth = c.dimensions.height * CM_TO_MM;
+    const width = toMm(c.dimensions.width);
+    const length = toMm(c.dimensions.length);
+    const depth = toMm(c.dimensions.height);
     boxVolumeByReference.set(String(c.id), width * length * depth);
     return {
       Reference: String(c.id),
@@ -165,7 +169,8 @@ function fromAtomicSolverResponse(orderId, solverResult, itemCodeToId, boxVolume
     const v = violationByCode.get(itemCode);
     return {
       itemId: itemCodeToId.get(itemCode) ?? itemCode,
-      reason: v?.code ?? (typeof entry === "object" && entry?.reason) ?? "no_container_fits",
+      reason:
+        v?.code ?? (typeof entry === "object" ? entry?.reason : undefined) ?? "no_container_fits",
       ...(v?.message ? { message: v.message } : {}),
     };
   });
@@ -333,9 +338,9 @@ function toAtomicSolverRequest(payload) {
 
   const boxVolumeByReference = new Map();
   const boxTypes = payload.containers.map((c) => {
-    const width = c.dimensions.width * CM_TO_MM;
-    const length = c.dimensions.length * CM_TO_MM;
-    const depth = c.dimensions.height * CM_TO_MM;
+    const width = toMm(c.dimensions.width);
+    const length = toMm(c.dimensions.length);
+    const depth = toMm(c.dimensions.height);
     boxVolumeByReference.set(String(c.id), width * length * depth);
     return {
       Reference: String(c.id),

@@ -106,7 +106,7 @@ async function assignOrder(supabase, body) {
       .eq("id", workerId)
       .maybeSingle();
     if (workerErr) return errorResponse("database_error", workerErr.message, 500);
-    if (!worker || worker.role !== "warehouse_worker") {
+    if (!worker || worker.role !== "warehouse_worker" || worker.active === false) {
       return errorResponse("invalid_request", "workerId must be an active warehouse_worker");
     }
   }

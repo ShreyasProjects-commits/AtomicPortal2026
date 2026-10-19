@@ -285,19 +285,121 @@ describe("runOptimize: result translated back", () => {
     assert.deepEqual(result.unpackedItems, [{ itemId: "item-1", reason: "too_heavy" }]);
   });
 
-  test(
-    "an unplaced item with no violation gets the 'no_container_fits' reason",
-    {
-      todo:
-        "BUG: for a plain item-code string, (typeof entry === 'object' && entry?.reason) is false, " +
-        "and false ?? 'no_container_fits' stays false, so reason is false",
-    },
-    async () => {
-      nextResponse = { placements: [], unplacedItems: ["item-1__1"] };
-      const result = await runOptimize(makePayload());
-      assert.equal(result.unpackedItems[0].reason, "no_container_fits");
-    },
-  );
+  test("an unplaced item with no violation gets the 'no_container_fits' reason", async () => {
+    nextResponse = { placements: [], unplacedItems: ["item-1__1"] };
+    const result = await runOptimize(makePayload());
+    assert.deepEqual(result.unpackedItems, [{ itemId: "item-1", reason: "no_container_fits" }]);
+  });
+
+  test("an unplaced object entry without a reason also gets 'no_container_fits'", async () => {
+    nextResponse = { placements: [], unplacedItems: [{ itemCode: "item-1__1" }] };
+    const result = await runOptimize(makePayload());
+    assert.equal(result.unpackedItems[0].reason, "no_container_fits");
+  });
+
+  test("a violation's code wins over the generic reason", async () => {
+    nextResponse = {
+      placements: [],
+      unplacedItems: ["item-1__1"],
+      violations: [{ itemCode: "item-1__1", code: "TOO_HEAVY" }],
+    };
+    const result = await runOptimize(makePayload());
+    assert.equal(result.unpackedItems[0].reason, "TOO_HEAVY");
+    assert.equal("message" in result.unpackedItems[0], false);
+  });
+});
+
+describe("runOptimize: more translation cases", () => {
+  test("an item with quantity 0 sends no solver items", async () => {
+    const payload = makePayload();
+    payload.items[0].quantity = 0;
+    await runOptimize(payload);
+    assert.deepEqual(fetchCalls[0].body.items, []);
+    assert.equal(fetchCalls[0].body.boxTypes.length, 1);
+  });
+
+  test("decimal centimetres become clean millimetres (no floating-point noise)", async () => {
+    const payload = makePayload();
+    payload.items[0].quantity = 1;
+    payload.items[0].dimensions = { length: 0.57, width: 1.15, height: 2.3, unit: "cm" };
+    payload.containers[0].dimensions = { length: 12.3, width: 0.57, height: 20.5, unit: "cm" };
+    await runOptimize(payload);
+    const [item] = fetchCalls[0].body.items;
+    assert.equal(item.Length, 5.7);
+    assert.equal(item.Width, 11.5);
+    assert.equal(item.Depth, 23);
+    const [box] = fetchCalls[0].body.boxTypes;
+    assert.deepEqual([box.Length, box.Width, box.Depth], [123, 5.7, 205]);
+  });
+
+  test("a placement for an unknown item code falls back to the raw code", async () => {
+    nextResponse = {
+      placements: [
+        {
+          itemCode: "mystery",
+          boxReference: "c-1",
+          boxInstance: 1,
+          position: { x: 0, y: 0, z: 0 },
+          placedDimension: { width: 10, length: 10, depth: 10 },
+        },
+      ],
+      unplacedItems: [],
+    };
+    const result = await runOptimize(makePayload());
+    assert.equal(result.packedContainers[0].placements[0].itemId, "mystery");
+  });
+
+  test("several items and containers are sent and mapped back correctly", async () => {
+    const payload = makePayload();
+    payload.items = [
+      { ...payload.items[0], id: "i1", name: "One", quantity: 1 },
+      { ...payload.items[0], id: "i2", name: "Two", quantity: 2 },
+    ];
+    payload.containers.push({
+      id: "c-2",
+      name: "Small carton",
+      dimensions: { length: 30, width: 20, height: 20, unit: "cm" },
+      maxWeight: { value: 10, unit: "kg" },
+    });
+    const place = (itemCode, boxReference) => ({
+      itemCode,
+      boxReference,
+      boxInstance: 1,
+      position: { x: 0, y: 0, z: 0 },
+      placedDimension: { width: 100, length: 100, depth: 100 },
+    });
+    nextResponse = {
+      placements: [place("i1", "c-1"), place("i2__1", "c-2"), place("i2__2", "c-2")],
+      unplacedItems: [],
+    };
+
+    const result = await runOptimize(payload);
+
+    const sent = fetchCalls[0].body;
+    assert.deepEqual(sent.boxTypes.map((b) => b.Reference), ["c-1", "c-2"]);
+    assert.deepEqual(sent.items.map((i) => i.ItemCode), ["i1", "i2__1", "i2__2"]);
+
+    assert.deepEqual(result.packedContainers.map((b) => b.containerId), ["c-1", "c-2"]);
+    assert.deepEqual(result.packedContainers[1].placements.map((p) => p.itemId), ["i2", "i2"]);
+    // utilisation uses each box's own volume: 2 x 1,000,000 in 200*300*200 = 12,000,000
+    assert.ok(Math.abs(result.packedContainers[1].utilisation - 2 / 12) < 1e-9);
+  });
+});
+
+describe("runOptimize: FITSOLVER_URL secret", () => {
+  test("uses the FITSOLVER_URL environment variable when it is set", async () => {
+    const realGet = globalThis.Deno.env.get;
+    globalThis.Deno.env.get = (key) =>
+      key === "FITSOLVER_URL" ? "https://custom.example/solve" : undefined;
+    try {
+      // a fresh copy of the module, so it re-reads the environment
+      const fresh = await import("../supabase/functions/_shared/solver.js?with-env-url");
+      await fresh.runOptimize(makePayload());
+    } finally {
+      globalThis.Deno.env.get = realGet;
+    }
+    assert.equal(fetchCalls[0].url, "https://custom.example/solve");
+  });
 });
 
 describe("runOptimize: failures", () => {

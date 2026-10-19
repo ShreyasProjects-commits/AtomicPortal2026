@@ -142,14 +142,17 @@ describe("assign-worker: assign", () => {
     assert.equal((await res.json()).error, "not_found");
   });
 
-  test(
-    "an inactive worker can't be assigned an order",
-    { todo: "BUG: the error message says 'active' but only the role is checked, so a disabled worker can be assigned" },
-    async () => {
-      const res = await act("admin-token", { action: "assign", orderId: FREE_1, workerId: INACTIVE_ID });
-      assert.equal(res.status, 400);
-    },
-  );
+  test("an inactive worker can't be assigned an order", async () => {
+    const res = await act("admin-token", { action: "assign", orderId: FREE_1, workerId: INACTIVE_ID });
+    assert.equal(res.status, 400);
+    assert.equal(orderRow(FREE_1).assigned_worker_id, null);
+  });
+
+  test("a worker with a missing active flag is treated as active", async () => {
+    profileRow(WORKER_ID).active = null;
+    const res = await act("admin-token", { action: "assign", orderId: FREE_1, workerId: WORKER_ID });
+    assert.equal(res.status, 200);
+  });
 });
 
 describe("assign-worker: auto assign", () => {

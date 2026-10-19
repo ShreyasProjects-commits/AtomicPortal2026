@@ -25,7 +25,7 @@ Exception: `GET /order-result` returns the **integration contract** shape (neste
 |---|---|---|
 | `GET /orders` | List all orders |
 | `GET /orders?id=` | Order detail + items + containers + result |
-| `GET /order-result?id=` | api-contract shape for FitVisualizer |
+| `GET /order-result?id=` | api-contract shape for FitVisualizer. **Requires `Authorization: Bearer <access token>`**; admins can read any order, workers only orders assigned to them |
 | `POST /import-csv` | CSV upload — see `docs/import-contract.md` |
 | `POST /optimize` | FitSolver proxy; `{ orderId }` only to re-run |
 | `POST /auth/login` | Planned |

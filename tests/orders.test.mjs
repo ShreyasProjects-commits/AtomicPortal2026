@@ -343,15 +343,25 @@ describe("orders: POST create", () => {
     assert.equal(db.tables.orders.length, before);
   });
 
-  test(
-    "an item or container id that doesn't exist is a client error, not a 500",
-    { todo: "RISK: a foreign-key failure surfaces as 500 database_error instead of a 400/404" },
-    async () => {
-      db.fail("order_items", "insert", { code: "23503", message: "violates foreign key" });
-      const res = await post("admin-token", validOrder({ external_ref: "ORD-903" }));
-      assert.ok(res.status >= 400 && res.status < 500);
-    },
-  );
+  test("an item id that doesn't exist is a 400 client error and the order is rolled back", async () => {
+    db.fail("order_items", "insert", { code: "23503", message: "violates foreign key" });
+    const before = db.tables.orders.length;
+    const res = await post("admin-token", validOrder({ external_ref: "ORD-903" }));
+    assert.equal(res.status, 400);
+    const body = await res.json();
+    assert.equal(body.error, "invalid_request");
+    assert.match(body.message, /items do not exist/);
+    assert.equal(db.tables.orders.length, before);
+  });
+
+  test("a container id that doesn't exist is a 400 client error and the order is rolled back", async () => {
+    db.fail("order_containers", "insert", { code: "23503", message: "violates foreign key" });
+    const before = db.tables.orders.length;
+    const res = await post("admin-token", validOrder({ external_ref: "ORD-904" }));
+    assert.equal(res.status, 400);
+    assert.match((await res.json()).message, /containers do not exist/);
+    assert.equal(db.tables.orders.length, before);
+  });
 });
 
 describe("orders: POST complete", () => {

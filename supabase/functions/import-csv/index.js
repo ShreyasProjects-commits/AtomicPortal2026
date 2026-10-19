@@ -57,6 +57,22 @@ serve(async (req) => {
     return errorResponse("invalid_csv", err.message);
   }
 
+  // Reject the whole file up front if any order already exists, so a duplicate
+  // late in the file can't leave earlier orders half-imported.
+  if (!replace) {
+    const { data: existingOrders } = await supabase
+      .from("orders")
+      .select("external_ref")
+      .in("external_ref", grouped.map((o) => o.external_ref));
+    if (existingOrders?.length) {
+      return errorResponse(
+        "duplicate_order",
+        `Order ${existingOrders[0].external_ref} already exists. Pass ?replace=true to re-import.`,
+        409,
+      );
+    }
+  }
+
   const imported = [];
   for (const orderData of grouped) {
     try {
@@ -120,11 +136,15 @@ async function importOneOrder(supabase, orderData, replace) {
       .single();
     if (error) throw error;
 
-    await supabase.from("order_items").insert({
+    const { error: linkErr } = await supabase.from("order_items").insert({
       order_id: order.id,
       item_id: row.id,
       quantity: item.quantity,
     });
+    if (linkErr) {
+      await supabase.from("orders").delete().eq("id", order.id);
+      throw linkErr;
+    }
     itemRows.push({ ...row, quantity: item.quantity });
   }
 
@@ -143,10 +163,14 @@ async function importOneOrder(supabase, orderData, replace) {
       .single();
     if (error) throw error;
 
-    await supabase.from("order_containers").insert({
+    const { error: linkErr } = await supabase.from("order_containers").insert({
       order_id: order.id,
       container_id: row.id,
     });
+    if (linkErr) {
+      await supabase.from("orders").delete().eq("id", order.id);
+      throw linkErr;
+    }
     containerRows.push(row);
   }
 
@@ -292,11 +316,15 @@ async function importOneOrder(supabase, orderData, replace) {
       .single();
     if (error) throw error;
 
-    await supabase.from("order_items").insert({
+    const { error: linkErr } = await supabase.from("order_items").insert({
       order_id: order.id,
       item_id: row.id,
       quantity: item.quantity,
     });
+    if (linkErr) {
+      await supabase.from("orders").delete().eq("id", order.id);
+      throw linkErr;
+    }
     itemRows.push({ ...row, quantity: item.quantity });
   }
 
@@ -315,10 +343,14 @@ async function importOneOrder(supabase, orderData, replace) {
       .single();
     if (error) throw error;
 
-    await supabase.from("order_containers").insert({
+    const { error: linkErr } = await supabase.from("order_containers").insert({
       order_id: order.id,
       container_id: row.id,
     });
+    if (linkErr) {
+      await supabase.from("orders").delete().eq("id", order.id);
+      throw linkErr;
+    }
     containerRows.push(row);
   }
 

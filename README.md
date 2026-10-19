@@ -54,26 +54,6 @@ They also run automatically on GitHub for every push and pull request
 | `tests/catalog.test.mjs` | `/catalog` |
 | `tests/order-result.test.mjs` | `/order-result` |
 
-**How they work.** The tests run the real Edge Function code. Only the database and the
-solver's network call are replaced with in-memory fakes (`tests/helpers/`), so the tests
-are fast, repeatable and never touch real data.
-
-**Not covered:** the real Supabase project (database constraints, RLS policies), the real
-solver and the browser UI — those need a test project/accounts or a browser test tool.
-
-**Known issues (marked `todo`).** Tests flagged `todo` describe correct behaviour that the
-code does not have yet. They are reported in the output but don't fail the run, and will
-start passing once fixed:
-
-- an inactive worker can still be assigned an order manually
-- a blank CSV dimension is accepted as `0`
-- an unplaced item with no solver reason gets `reason: false` instead of `"no_container_fits"`
-- a duplicate order later in a CSV import returns 409 after earlier orders were already created
-- errors saving an imported order's items/containers are ignored
-- `/order-result` has no authentication
-- creating an order with an unknown item/container id returns 500 instead of a client error
-- a database failure while loading a profile is reported as a 403 permissions error
-- "days worked" uses UTC dates rather than the local calendar day
 
 ## Docs
 

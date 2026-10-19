@@ -119,7 +119,10 @@
       }
 
       async function sendLiveResult() {
-        const response = await fetch(orderResultApiUrl(orderId));
+        const token = await getAccessToken();
+        const response = await fetch(orderResultApiUrl(orderId), {
+          headers: token ? { authorization: `Bearer ${token}` } : {},
+        });
         if (!response.ok) {
           throw new Error(`order-result request failed: ${response.status}`);
         }
