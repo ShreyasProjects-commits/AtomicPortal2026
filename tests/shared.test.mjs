@@ -185,6 +185,33 @@ describe("requireRole (server-side auth)", () => {
   });
 });
 
+describe("nextOrderRef (shared)", () => {
+  let db;
+  beforeEach(() => {
+    db = newDb();
+  });
+
+  test("starts at ORD-1001 when there are no ORD- orders", async () => {
+    assert.equal(await sharedOrders.nextOrderRef(db.client), "ORD-1001");
+  });
+
+  test("is one above the highest existing ORD- number, ignoring other references", async () => {
+    db.seed("orders", [
+      { id: uuid(1), external_ref: "ORD-1044" },
+      { id: uuid(2), external_ref: "ORD-1053" },
+      { id: uuid(3), external_ref: "ORD-xyz" },
+      { id: uuid(4), external_ref: "CHALLENGE-9999" },
+      { id: uuid(5), external_ref: null },
+    ]);
+    assert.equal(await sharedOrders.nextOrderRef(db.client), "ORD-1054");
+  });
+
+  test("never goes below ORD-1001", async () => {
+    db.seed("orders", [{ id: uuid(1), external_ref: "ORD-0007" }]);
+    assert.equal(await sharedOrders.nextOrderRef(db.client), "ORD-1001");
+  });
+});
+
 describe("_shared/orders.js", () => {
   let db;
   const ORDER = uuid(70);
@@ -267,6 +294,14 @@ describe("_shared/orders.js", () => {
     const payload = await sharedOrders.loadOrderForOptimize(db.client, ORDER);
     assert.equal(payload.orderId, ORDER);
     assert.equal(payload.items[0].quantity, 3);
+    assert.equal(payload.containers[0].maxWeight.value, 30);
+  });
+
+  test("loadOrderForOptimize doesn't pass box limits to the solver (ignored for now)", async () => {
+    db.tables.order_containers[0].containers = { ...container, max_boxes: 2, box_weight_kg: 0.5 };
+    const payload = await sharedOrders.loadOrderForOptimize(db.client, ORDER);
+    assert.equal("maxBoxes" in payload.containers[0], false);
+    assert.equal("boxWeight" in payload.containers[0], false);
     assert.equal(payload.containers[0].maxWeight.value, 30);
   });
 

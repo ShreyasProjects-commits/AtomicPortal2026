@@ -47,6 +47,32 @@ container,ORD-1043,,50,40,30,,,Medium carton,25
 - Re-importing the same `order_ref` returns `409` unless `?replace=true` is passed.
 - Units are always **cm** and **kg** (matches `docs/api-contract.md`).
 
+## Two-file import (FitSolver boxes + items files)
+
+Orders → **Import box challenge**: select **both files at once**. One is a boxes file and
+one is an items file, each **JSON** (array of objects) or **CSV** with the same column
+names. The two files are combined into **one order**; which file is which is detected from
+the columns. Sent as `multipart/form-data` to `POST /import-csv` with the fields `files`
+(twice) and optional `order_ref`; `?replace=true` works as for the single CSV.
+
+| File | Columns | Optional |
+|---|---|---|
+| Boxes | `Reference`, `Width`, `Length`, `Depth`, `MaxWeight` | `Active` |
+| Items | `ItemReference` (or `ItemCode`), `Width`, `Length`, `Depth`, `Weight` | |
+
+- Sizes are **millimetres** (converted to cm); weights are kg. Column names are not
+  case-sensitive.
+- `Length`, `Width` and `Depth` become `length_cm`, `width_cm` and `height_cm`.
+- Each items row is one physical item (quantity 1).
+- Boxes with `"Active": false` are skipped; an active box with no `MaxWeight` is rejected.
+- `MaximumBoxes` (stock limit) and `BoxWeight` (empty box weight) may be present in the
+  boxes file but are **ignored for now**: they are not stored and not sent to the solver,
+  so the solver treats every box type as unlimited.
+- `order_ref` is used when given; otherwise the next `ORD-` number is assigned.
+- Blank rows, and rows of only commas (common in spreadsheet exports), are ignored in both
+  this import and the single CSV import.
+- Errors return `400 invalid_files` with a message naming the file and row/column.
+
 ## Future (Thomax API)
 
 ```json

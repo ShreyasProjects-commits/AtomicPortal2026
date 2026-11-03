@@ -71,6 +71,58 @@ importForm?.addEventListener("submit", async (e) => {
   }
 });
 
+const challengeForm = document.getElementById("import-files-form");
+const challengeStatus = document.getElementById("import-files-status");
+
+function showChallengeStatus(message, isError = false) {
+  challengeStatus.textContent = message;
+  challengeStatus.className = isError ? "import-status error" : "import-status";
+}
+
+challengeForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fileInput = document.getElementById("challenge-files");
+  const files = [...(fileInput?.files ?? [])];
+  if (files.length !== 2) {
+    showChallengeStatus("Select exactly two files: one boxes file and one items file.", true);
+    return;
+  }
+
+  const form = new FormData();
+  for (const file of files) form.append("files", file);
+  const ref = document.getElementById("challenge-ref")?.value.trim();
+  if (ref) form.append("order_ref", ref);
+  const replace = document.getElementById("challenge-replace")?.checked ? "?replace=true" : "";
+
+  const submitBtn = challengeForm.querySelector("button[type=submit]");
+  submitBtn.disabled = true;
+  showChallengeStatus("Importing…");
+
+  try {
+    // No content-type header: the browser sets the multipart boundary itself.
+    const res = await fetch(`${API_BASE}/import-csv${replace}`, {
+      method: "POST",
+      body: form,
+      headers: { ...(await authHeaders()) },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message ?? data.error ?? `HTTP ${res.status}`);
+
+    const order = data.imported?.[0];
+    if (!order) throw new Error("Nothing was imported.");
+    if (order.status === "failed") {
+      throw new Error(`${order.external_ref ?? "Order"} failed: ${order.error ?? "unknown error"}`);
+    }
+    showChallengeStatus(`Imported ${order.external_ref ?? order.id}: ${order.status}.`);
+    fileInput.value = "";
+    await loadOrders();
+  } catch (err) {
+    showChallengeStatus(err.message, true);
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
 autoAssignBtn?.addEventListener("click", async () => {
   autoAssignBtn.disabled = true;
   autoAssignStatus.hidden = false;

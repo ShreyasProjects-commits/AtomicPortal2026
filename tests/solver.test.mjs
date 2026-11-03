@@ -110,6 +110,28 @@ describe("toOptimizePayload", () => {
   });
 });
 
+describe("box limits (MaximumBoxes / BoxWeight) are not sent for now", () => {
+  test("toOptimizePayload ignores max_boxes and box_weight_kg", () => {
+    const rows = [
+      { id: "c1", name: "Box", length_cm: 60, width_cm: 40, height_cm: 40, max_weight_kg: 30, max_boxes: 2, box_weight_kg: 0.5 },
+    ];
+    const { containers } = toOptimizePayload("o", [], rows);
+    assert.equal("maxBoxes" in containers[0], false);
+    assert.equal("boxWeight" in containers[0], false);
+  });
+
+  test("the solver request never includes MaximumBoxes or BoxWeight", async () => {
+    const payload = makePayload();
+    payload.containers[0].maxBoxes = 2;
+    payload.containers[0].boxWeight = { value: 0.5, unit: "kg" };
+    await runOptimize(payload);
+    const [box] = fetchCalls[0].body.boxTypes;
+    assert.equal("MaximumBoxes" in box, false);
+    assert.equal("BoxWeight" in box, false);
+    assert.equal(box.MaxWeight, 30);
+  });
+});
+
 describe("runOptimize: request sent to the solver", () => {
   test("POSTs JSON to the default solver URL", async () => {
     await runOptimize(makePayload());

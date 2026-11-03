@@ -1,17 +1,23 @@
 /** Minimal CSV parser: quoted fields may contain commas ("" escapes a quote); no multi-line fields. */
 export function parseCsv(text) {
-  const lines = text.trim().split(/\r?\n/).filter(Boolean);
-  if (lines.length < 2) {
+  // Spreadsheet exports often end with (or contain) rows of only commas, e.g.
+  // ",,,,,". Rows with no content are skipped; _line keeps the real file line.
+  const entries = text
+    .replace(/^﻿/, "")
+    .split(/\r?\n/)
+    .map((line, i) => ({ line, lineNumber: i + 1 }))
+    .filter(({ line }) => line.replace(/[\s,"]/g, "") !== "");
+  if (entries.length < 2) {
     throw new Error("csv_empty");
   }
-  const headers = splitCsvLine(lines[0]).map((h) => h.trim());
-  return lines.slice(1).map((line, i) => {
+  const headers = splitCsvLine(entries[0].line).map((h) => h.trim());
+  return entries.slice(1).map(({ line, lineNumber }) => {
     const values = splitCsvLine(line);
     const row = {};
     headers.forEach((h, idx) => {
       row[h] = (values[idx] ?? "").trim();
     });
-    row._line = i + 2;
+    row._line = lineNumber;
     return row;
   });
 }

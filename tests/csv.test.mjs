@@ -165,6 +165,28 @@ describe("CSV format edge cases", () => {
     assert.equal(order.items[0].name, "Widget");
   });
 
+  test("rows of only commas (spreadsheet export padding) are ignored", () => {
+    const text = `${HEADER}\nitem,ORD-1,Widget,1,2,3,4,5,,\n,,,,,,,,,\n ,, ,,,,,,,\n,,,,,,,,,\n`;
+    const orders = groupCsvOrders(parseCsv(text));
+    assert.equal(orders.length, 1);
+    assert.equal(orders[0].items.length, 1);
+  });
+
+  test("a comma-only row before the header is ignored", () => {
+    const [order] = groupCsvOrders(parseCsv(`,,,,,\n${HEADER}\nitem,ORD-1,Widget,1,2,3,4,5,,\n`));
+    assert.equal(order.items[0].name, "Widget");
+  });
+
+  test("a file with only comma rows has no data", () => {
+    assert.throws(() => parseCsv(",,,\n,,,\n"), /csv_empty/);
+    assert.throws(() => parseCsv(`${HEADER}\n,,,,,,,,,\n`), /csv_empty/);
+  });
+
+  test("line numbers in errors are the real file lines, even with blank rows", () => {
+    const text = `${HEADER}\n,,,,,,,,,\n\nitem,ORD-1,Widget,abc,2,3,4,5,,\n`;
+    assert.throws(() => groupCsvOrders(parseCsv(text)), /invalid length_cm on line 4/);
+  });
+
   test("header names are case-sensitive", () => {
     const text = `${HEADER.replace("record_type", "Record_Type")}\nitem,ORD-1,Widget,1,2,3,4,5,,\n`;
     assert.throws(() => groupCsvOrders(parseCsv(text)), /invalid record_type on line 2/);

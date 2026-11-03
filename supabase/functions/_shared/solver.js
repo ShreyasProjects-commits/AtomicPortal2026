@@ -96,8 +96,8 @@ function toAtomicSolverRequest(payload) {
       // BoxWeight, Active, MaximumBoxes, and (on items) BoxGroup are all
       // optional per packer_schemas.yaml, each with a defined "if omitted"
       // behaviour (no weight considered / active / no limit / any group).
-      // FitPortal doesn't track empty-box weight yet, so omit BoxWeight
-      // rather than asserting 0 — that's a different claim to the solver.
+      // FitPortal doesn't send BoxWeight or MaximumBoxes for now, rather than
+      // asserting values the solver may not support.
     };
   });
 
@@ -351,8 +351,8 @@ function toAtomicSolverRequest(payload) {
       // BoxWeight, Active, MaximumBoxes, and (on items) BoxGroup are all
       // optional per packer_schemas.yaml, each with a defined "if omitted"
       // behaviour (no weight considered / active / no limit / any group).
-      // FitPortal doesn't track empty-box weight yet, so omit BoxWeight
-      // rather than asserting 0 — that's a different claim to the solver.
+      // FitPortal doesn't send BoxWeight or MaximumBoxes for now, rather than
+      // asserting values the solver may not support.
     };
   });
 

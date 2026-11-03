@@ -62,6 +62,37 @@
       </section>
 
       <section class="panel">
+        <h2>Import box challenge (boxes + items files)</h2>
+        <p class="hint">
+          Select <strong>both files at once</strong>: one boxes file and one items file (JSON or CSV,
+          FitSolver format, sizes in mm). They are combined into one order and optimised.
+          Leave the reference blank to use the next <code>ORD-</code> number.
+        </p>
+
+        <form id="import-files-form" class="import-form">
+          <input
+            type="file"
+            id="challenge-files"
+            accept=".json,.csv,application/json,text/csv"
+            multiple
+            required
+          />
+          <input
+            type="text"
+            id="challenge-ref"
+            maxlength="100"
+            placeholder="Order reference (optional)"
+          />
+          <label class="checkbox-label">
+            <input type="checkbox" id="challenge-replace" />
+            Replace existing order with the same reference
+          </label>
+          <button type="submit" class="primary">Upload &amp; optimise</button>
+        </form>
+        <p id="import-files-status" class="import-status"></p>
+      </section>
+
+      <section class="panel">
         <h2>Import orders (CSV)</h2>
         <p class="hint">
           Bulk import — simulates orders arriving from the Thomax business page.

@@ -15,6 +15,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { handleCors, json, errorResponse } from "../_shared/cors.js";
 import { getServiceClient, UUID_RE } from "../_shared/supabase.js";
 import { requireRole } from "../_shared/authz.js";
+import { nextOrderRef } from "../_shared/orders.js";
 
 // orders now has two FKs to profiles (assigned_worker_id, completed_by), so
 // each embed must be disambiguated with !<constraint_name> — Postgres's
@@ -132,20 +133,6 @@ async function getOrderDetail(supabase, id, profile) {
     containers: (orderContainers ?? []).map((row) => row.containers),
     result: result ?? null,
   });
-}
-
-async function nextOrderRef(supabase) {
-  const { data } = await supabase
-    .from("orders")
-    .select("external_ref")
-    .like("external_ref", "ORD-%");
-
-  let max = 1000;
-  for (const row of data ?? []) {
-    const n = Number(row.external_ref.slice(4));
-    if (Number.isInteger(n) && n > max) max = n;
-  }
-  return `ORD-${max + 1}`;
 }
 
 async function createOrder(body, supabase) {

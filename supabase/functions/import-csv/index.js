@@ -5,6 +5,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { handleCors, json, errorResponse } from "../_shared/cors.js";
 import { requireRole } from "../_shared/authz.js";
 import { groupCsvOrders, parseCsv } from "../_shared/csv.js";
+import { buildOrderFromSolverFiles } from "../_shared/solver-files.js";
+import { nextOrderRef } from "../_shared/orders.js";
 import {
   markOrderFailed,
   persistOptimizeResult,
@@ -26,16 +28,27 @@ serve(async (req) => {
   if (auth.error) return errorResponse(auth.error, auth.message, auth.status);
 
   let csvText;
+  let solverFiles = null;
+  let requestedRef = "";
   const contentType = req.headers.get("content-type") ?? "";
 
   try {
     if (contentType.includes("multipart/form-data")) {
       const form = await req.formData();
-      const file = form.get("file");
-      if (!file || typeof file === "string") {
-        return errorResponse("invalid_request", "Expected file field in form data");
+      const uploads = form.getAll("files").filter((f) => f && typeof f !== "string");
+      if (uploads.length) {
+        // Two-file import: a boxes file + an items file (FitSolver format) become one order.
+        solverFiles = await Promise.all(
+          uploads.map(async (f) => ({ name: f.name || "file", text: await f.text() })),
+        );
+        requestedRef = String(form.get("order_ref") ?? "").trim();
+      } else {
+        const file = form.get("file");
+        if (!file || typeof file === "string") {
+          return errorResponse("invalid_request", "Expected file field in form data");
+        }
+        csvText = await file.text();
       }
-      csvText = await file.text();
     } else {
       csvText = await req.text();
     }
@@ -43,7 +56,7 @@ serve(async (req) => {
     return errorResponse("invalid_request", "Could not read request body");
   }
 
-  if (!csvText.trim()) {
+  if (!solverFiles && !csvText.trim()) {
     return errorResponse("invalid_request", "CSV body is empty");
   }
 
@@ -52,9 +65,17 @@ serve(async (req) => {
   const replace = new URL(req.url).searchParams.get("replace") === "true";
   let grouped;
   try {
-    grouped = groupCsvOrders(parseCsv(csvText));
+    if (solverFiles) {
+      if (requestedRef.length > 100) {
+        throw new Error("Order reference is too long (100 characters at most)");
+      }
+      const ref = requestedRef || (await nextOrderRef(supabase));
+      grouped = [buildOrderFromSolverFiles(solverFiles, ref)];
+    } else {
+      grouped = groupCsvOrders(parseCsv(csvText));
+    }
   } catch (err) {
-    return errorResponse("invalid_csv", err.message);
+    return errorResponse(solverFiles ? "invalid_files" : "invalid_csv", err.message);
   }
 
   // Reject the whole file up front if any order already exists, so a duplicate

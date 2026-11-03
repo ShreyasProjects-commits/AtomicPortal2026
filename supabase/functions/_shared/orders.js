@@ -92,6 +92,21 @@ export async function loadOrderForOptimize(supabase, orderId) {
   return toOptimizePayload(orderId, itemRows, containerRows);
 }
 
+/** Next free "ORD-<number>" reference: one above the highest existing, starting at ORD-1001. */
+export async function nextOrderRef(supabase) {
+  const { data } = await supabase
+    .from("orders")
+    .select("external_ref")
+    .like("external_ref", "ORD-%");
+
+  let max = 1000;
+  for (const row of data ?? []) {
+    const n = Number(row.external_ref.slice(4));
+    if (Number.isInteger(n) && n > max) max = n;
+  }
+  return `ORD-${max + 1}`;
+}
+
 /** api-contract.md shape for FitVisualizer consumption. */
 export function toApiContractResult(orderId, dbResult) {
   if (!dbResult) return null;

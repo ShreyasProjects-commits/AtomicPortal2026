@@ -43,6 +43,7 @@ They also run automatically on GitHub for every push and pull request
 | File | Covers |
 |---|---|
 | `tests/csv.test.mjs` | CSV parsing/validation and the sample import files |
+| `tests/solver-files.test.mjs` | Two-file import (boxes + items, JSON or CSV) → one order |
 | `tests/solver.test.mjs` | Translation to/from the solver (units, quantities, placements, utilisation, failures) and saving results |
 | `tests/config.test.mjs` | Frontend URL/format helpers and the 3D axis conversion |
 | `tests/shared.test.mjs` | CORS, UUID check, server-side auth (`requireRole`) and shared order loaders |
